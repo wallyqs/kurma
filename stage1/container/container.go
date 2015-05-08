@@ -150,7 +150,7 @@ func (c *Container) Enter(stream *os.File) error {
 	}
 
 	// Check for a privileged isolator
-	if iso := c.image.App.Isolators.GetByName(kschema.HostPrivlegedName); iso != nil {
+	if iso := c.image.App.Isolators.GetByName(kschema.HostPrivilegedName); iso != nil {
 		if piso, ok := iso.Value().(*kschema.HostPrivileged); ok {
 			if *piso {
 				launcher.HostPrivileged = true
