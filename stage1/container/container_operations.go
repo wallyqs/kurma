@@ -234,7 +234,7 @@ func (c *Container) launchStage2() error {
 	}
 
 	// Check for a privileged isolator
-	if iso := c.image.App.Isolators.GetByName(schema.HostPrivlegedName); iso != nil {
+	if iso := c.image.App.Isolators.GetByName(schema.HostPrivilegedName); iso != nil {
 		if piso, ok := iso.Value().(*schema.HostPrivileged); ok {
 			if *piso {
 				launcher.HostPrivileged = true

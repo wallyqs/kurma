@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	HostPrivlegedName = "host/privileged"
+	HostPrivilegedName = "host/privileged"
 )
 
 func init() {
-	types.AddIsolatorValueConstructor(HostPrivlegedName, newHostPrivileged)
+	types.AddIsolatorValueConstructor(HostPrivilegedName, newHostPrivileged)
 }
 
 func newHostPrivileged() types.IsolatorValue {

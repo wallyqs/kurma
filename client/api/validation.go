@@ -16,7 +16,7 @@ func validateImageManifest(imageManifest *schema.ImageManifest) error {
 
 	// Reject any containers that request host privilege. This can only be started
 	// with the local API, not remote API.
-	if iso := imageManifest.App.Isolators.GetByName(kschema.HostPrivlegedName); iso != nil {
+	if iso := imageManifest.App.Isolators.GetByName(kschema.HostPrivilegedName); iso != nil {
 		if piso, ok := iso.Value().(*kschema.HostPrivileged); ok {
 			if *piso {
 				return fmt.Errorf("host privileged containers cannot be launched remotely")
