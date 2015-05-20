@@ -385,8 +385,16 @@ func setupReadRequest(t *testing.T, l net.Listener, content *string, response st
 		go func() {
 			defer close(doneChan)
 			close(ch)
-			b, _ := ioutil.ReadAll(c)
-			*content = string(b)
+
+			// Allow a few attempts in the event of a short read. But once we get
+			// content, then break.
+			for i := 0; i < 5; i++ {
+				b, _ := ioutil.ReadAll(c)
+				*content = string(b)
+				if len(b) > 0 {
+					break
+				}
+			}
 		}()
 
 		// Ensure the read goroutine has started then write the request ok response.
