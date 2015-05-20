@@ -112,6 +112,7 @@ func (c *client) request(request [][]string, timeout time.Duration) ([]string, e
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close()
 
 	// Abandon whatever we're doing and close the request if stop is called
 	done := make(chan struct{})
