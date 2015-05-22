@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -20,6 +22,7 @@ import (
 	"github.com/apcera/logray"
 	"github.com/apcera/util/aciremote"
 	"github.com/apcera/util/proc"
+	"github.com/appc/spec/discovery"
 	"github.com/vishvananda/netlink"
 )
 
@@ -630,5 +633,33 @@ func (r *runner) startConsole() error {
 		return fmt.Errorf("Failed to start console: %v", err)
 	}
 	r.log.Debug("Started console")
+	return nil
+}
+
+func (r *runner) setupDiscoveryProxy() error {
+	uri, err := url.Parse(r.config.NetworkConfig.ProxyURL)
+	if err != nil {
+		r.log.Warnf("Failed to parse proxy url: %v", err)
+		return nil
+	}
+
+	// discovery requests
+	transport, ok := discovery.Client.Transport.(*http.Transport)
+	if !ok {
+		r.log.Warnf("Failed to configure discovery proxy, transport was not the expected type: %T",
+			discovery.Client.Transport)
+		return nil
+	}
+	transport.Proxy = http.ProxyURL(uri)
+
+	// actual download requests
+	transport, ok = aciremote.Client.Transport.(*http.Transport)
+	if !ok {
+		r.log.Warnf("Failed to configure remote download proxy, transport was not the expected type: %T",
+			aciremote.Client.Transport)
+		return nil
+	}
+	transport.Proxy = http.ProxyURL(uri)
+
 	return nil
 }

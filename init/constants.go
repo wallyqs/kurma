@@ -22,6 +22,7 @@ var (
 		(*runner).configureHostname,
 		(*runner).configureNetwork,
 		(*runner).rootReadonly,
+		(*runner).setupDiscoveryProxy,
 		(*runner).startNTP,
 		(*runner).startServer,
 		(*runner).startInitContainers,

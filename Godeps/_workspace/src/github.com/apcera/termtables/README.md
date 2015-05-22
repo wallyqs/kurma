@@ -1,5 +1,7 @@
 # Termtables
 
+[![Build Status](https://travis-ci.org/apcera/termtables.svg?branch=master)](https://travis-ci.org/apcera/termtables)
+
 A [Go](http://golang.org) port of the Ruby library [terminal-tables](https://github.com/visionmedia/terminal-table) for
 fast and simple ASCII table generation.
 
@@ -11,7 +13,7 @@ go get github.com/apcera/termtables
 
 ## Go Style Documentation
 
-[http://godoc.org/github.com/apcera/termtable](http://godoc.org/github.com/apcera/termtable)
+[http://godoc.org/github.com/apcera/termtables](http://godoc.org/github.com/apcera/termtables)
 
 ## APC Command Line usage
 

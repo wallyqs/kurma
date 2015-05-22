@@ -25,6 +25,7 @@ type kurmaNetworkConfig struct {
 	DNS        []string                 `json:"dns,omitempty"`
 	Gateway    string                   `json:"gateway,omitempty"`
 	Interfaces []*kurmaNetworkInterface `json:"interfaces,omitempty"`
+	ProxyURL   string                   `json:"proxy_url,omitempty"`
 }
 
 type kurmaNetworkInterface struct {

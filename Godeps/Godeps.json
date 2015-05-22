@@ -16,53 +16,53 @@
 		},
 		{
 			"ImportPath": "github.com/apcera/termtables",
-			"Rev": "6e7582e2da28cb5324ebfb9243d2617f0de93ee2"
+			"Rev": "be44afb7779fac2e35b57717ee00d77e0e6698ed"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/aciremote",
-			"Rev": "4fc1cbb365fda9e8673817fe6d23940f6fb0ae6a"
+			"Rev": "dd007497cde8908f49fc23cb060f06f4bdd6db28"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/envmap",
-			"Rev": "4fc1cbb365fda9e8673817fe6d23940f6fb0ae6a"
+			"Rev": "dd007497cde8908f49fc23cb060f06f4bdd6db28"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/hashutil",
-			"Rev": "4fc1cbb365fda9e8673817fe6d23940f6fb0ae6a"
+			"Rev": "dd007497cde8908f49fc23cb060f06f4bdd6db28"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/proc",
-			"Rev": "4fc1cbb365fda9e8673817fe6d23940f6fb0ae6a"
+			"Rev": "dd007497cde8908f49fc23cb060f06f4bdd6db28"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/str",
-			"Rev": "4fc1cbb365fda9e8673817fe6d23940f6fb0ae6a"
+			"Rev": "dd007497cde8908f49fc23cb060f06f4bdd6db28"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/tarhelper",
-			"Rev": "4fc1cbb365fda9e8673817fe6d23940f6fb0ae6a"
+			"Rev": "dd007497cde8908f49fc23cb060f06f4bdd6db28"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/terminal",
-			"Rev": "4fc1cbb365fda9e8673817fe6d23940f6fb0ae6a"
+			"Rev": "dd007497cde8908f49fc23cb060f06f4bdd6db28"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/testtool",
-			"Rev": "4fc1cbb365fda9e8673817fe6d23940f6fb0ae6a"
+			"Rev": "dd007497cde8908f49fc23cb060f06f4bdd6db28"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/uuid",
-			"Rev": "4fc1cbb365fda9e8673817fe6d23940f6fb0ae6a"
+			"Rev": "dd007497cde8908f49fc23cb060f06f4bdd6db28"
 		},
 		{
 			"ImportPath": "github.com/appc/spec/discovery",
-			"Comment": "v0.5.1-57-g1865fe7",
-			"Rev": "1865fe7deb61b38f7a674d0c3cd6a2cff4896170"
+			"Comment": "v0.5.2-5-g0d69fdd",
+			"Rev": "0d69fddf0a40099567332908f4e9615bf9539a02"
 		},
 		{
 			"ImportPath": "github.com/appc/spec/schema",
-			"Comment": "v0.5.1-57-g1865fe7",
-			"Rev": "1865fe7deb61b38f7a674d0c3cd6a2cff4896170"
+			"Comment": "v0.5.2-5-g0d69fdd",
+			"Rev": "0d69fddf0a40099567332908f4e9615bf9539a02"
 		},
 		{
 			"ImportPath": "github.com/bradfitz/http2",

@@ -37,12 +37,12 @@
 
 - [ ] Multiple apps in a single pod
 - [ ] Configurable configuration datasources
-- [ ] Add support for image retrieval through an http proxy
 - [ ] Add whitelist support for where to retrieve an image from
 - [ ] Add baseline enforcement of certain kernel namespaces, like mount, ipc,
   and pid.
 - [ ] Have enter command look up user shell if none is given and use that for
   exec
+- [X] Add support for image retrieval through an http proxy
 - [X] Kernel module scoping for each environment
 
 ### Exploritory
