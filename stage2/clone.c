@@ -8,11 +8,14 @@
 #define FILENAMESIZE 4096
 
 #include <errno.h>
+#include <grp.h>
+#include <sched.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <sys/resource.h>
+#include <sys/types.h>
 
 #include "spawner.h"
 

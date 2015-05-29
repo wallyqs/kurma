@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sched.h>
+#include <stdlib.h>
 #include <sysexits.h>
 #include <unistd.h>
 

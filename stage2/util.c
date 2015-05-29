@@ -3,15 +3,21 @@
 #ifndef INITD_SPAWNER_UTIL_C
 #define INITD_SPAWNER_UTIL_C
 
-#include <errno.h>
+#define _GNU_SOURCE
+
 #include <fcntl.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+
 #include <sys/types.h>
-#include <pwd.h>
-#include <grp.h>
+#include <sys/time.h>
+#include <sys/wait.h>
 
 #include "spawner.h"
 

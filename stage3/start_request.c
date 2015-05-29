@@ -3,6 +3,8 @@
 #ifndef INITD_SERVER_START_REQUEST_C
 #define INITD_SERVER_START_REQUEST_C
 
+#define _GNU_SOURCE
+
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>

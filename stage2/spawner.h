@@ -3,6 +3,8 @@
 #ifndef INITD_SPAWNER_SPAWNER_H
 #define INITD_SPAWNER_SPAWNER_H
 
+#include <errno.h>
+#include <error.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -114,6 +116,12 @@ void closefds();
 void joincgroups(char *tasksfiles[]);
 void joinnamespace(char *filename);
 int flags_for_clone(clone_destination_data *args);
+
+// mount.c
+char *tmpdir(void);
+void createroot(char *src, char *dst, bool privileged);
+void enterroot(bool privileged);
+void mountproc(void);
 
 // util.c
 char *append(char **destination, const char *format, ...);

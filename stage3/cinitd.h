@@ -108,29 +108,43 @@ void initd_request_remove(struct request *r);
 // blocking.
 void initd_request_read(struct request *r);
 
+// This will respond that there was an internal error with processing the
+// request.
+void initd_response_internal_error(struct request *r);
+
+// This will respond that there was an error with the parameters of the request.
+void initd_response_protocol_error(struct request *r);
+
+// This will respond that the request was successful.
+void initd_response_request_ok(struct request *r);
+
 // This is called once a request object is found that has a COMMAND element set
 // to "CHROOT".
-void initd_chroot_request(struct request *r);
+void chroot_request(struct request *r);
 
 // This is called once a request object is found that has a COMMAND element set
 // to "SETHOSTNAME".
-void initd_sethostname_request(struct request *r);
+void sethostname_request(struct request *r);
 
 // This is called once a request object is found that has a COMMAND element set
 // to "EXEC".
-void initd_exec_request(struct request *r);
+void exec_request(struct request *r);
 
 // This is called once a request object is found that has a COMMAND element set
 // to "START".
-void initd_start_request(struct request *r);
+void start_request(struct request *r);
+
+// This is called once a request object is found that has a COMMAND element set
+// to "MOUNT".
+void mount_request(struct request *r);
 
 // This is called once a request object is found that has a COMMAND element set
 // to "STATUS".
-void initd_status_request(struct request *r);
+void status_request(struct request *r);
 
 // This is called once a request object is found that has a COMMAND element set
 // to "WAIT".
-void initd_wait_request(struct request *r);
+void wait_request(struct request *r);
 
 // ------------------
 // Response handlers.
@@ -278,6 +292,16 @@ void server_print_time(FILE *fd);
 // after itself. It uses pivot_root instead of chroot to ensure cleaner
 // separation from the root mount namespace.
 int pivot_root(char *root, bool privileged);
+
+// Converts the string of the username into a UID for a process by either
+// looking up the username in /etc/passwd or by converting it to an integer if
+// it is all digits.
+int uidforuser2(char *user);
+
+// Converts the string of the group name into a GID for a process by either
+// looking up the group in /etc/group or by converting it to an integer if it is
+// all digits.
+int gidforgroup2(char *group);
 
 // -------
 // Logging
