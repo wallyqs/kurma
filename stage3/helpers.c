@@ -203,21 +203,19 @@ void initd_setup_fds(char *stdout_fn, char *stderr_fn)
 }
 
 // Documented in cinitd.h
-int pivot_root(char *root, bool privileged) {
+int moveroot(char *root) {
 	if (chdir(root) < 0)
 		return -1;
-	if (mkdir("host", 0755) < 0)
+
+	if (mount (root, root, NULL, MS_BIND | MS_REC, NULL) < 0)
 		return -1;
-	if (syscall(__NR_pivot_root, ".", "host") < 0)
+	if (mount (root, "/", NULL, MS_MOVE, NULL) < 0)
+		return -1;
+	if (chroot (".") < 0)
 		return -1;
 	if (chdir("/") < 0)
 		return -1;
 
-	if (!privileged) {
-		if(umount2("/host", MNT_DETACH) < 0)
-			return -1;
-		rmdir("/host");
-	}
 	return 0;
 }
 

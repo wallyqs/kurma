@@ -15,8 +15,8 @@
 - [ ] stage1: Add resource allocation
 - [ ] stage1: Re-enable user namespace functionality
 - [ ] Review Manager/Container lock handling
-- [ ] Look at a futex for protecting concurrent pivot_root calls.
 - [ ] Metadata API support
+- [X] Look at a futex for protecting concurrent pivot_root calls.
 - [X] cli: Add parameter for speciying a remote host to use
 - [X] stage3: Updated User/Group username/uid handling to 0.6.0 spec
 - [X] api: Implement remote API handling

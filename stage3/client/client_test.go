@@ -161,7 +161,7 @@ func TestClient_Chroot(t *testing.T) {
 	readChan := setupReadRequest(t, l, &chrootContent, "REQUEST OK\n")
 
 	client := New(socketFile)
-	err := client.Chroot("/chroot", false, time.Second)
+	err := client.Chroot("/chroot", time.Second)
 	tt.TestExpectSuccess(t, err)
 
 	select {
@@ -170,7 +170,7 @@ func TestClient_Chroot(t *testing.T) {
 		tt.Fatalf(t, "Expected to have read client response within 1 second")
 	}
 
-	expectedRequest := "1\n1\n3\n6\nCHROOT7\n/chroot5\nfalse"
+	expectedRequest := "1\n1\n2\n6\nCHROOT7\n/chroot"
 	tt.TestEqual(t, chrootContent, expectedRequest)
 }
 
@@ -224,6 +224,30 @@ func TestClient_Start(t *testing.T) {
 	}
 
 	expectedRequest := "1\n6\n2\n5\nSTART4\necho1\n3\n1231\n3\ndir1\n7\nFOO=bar2\n2\n/a2\n/b2\n3\n1233\n456"
+	tt.TestEqual(t, startContent, expectedRequest)
+}
+
+func TestClient_Mount(t *testing.T) {
+	tt.StartTest(t)
+	defer tt.FinishTest(t)
+
+	socketFile, l := createSocketServer(t)
+	defer l.Close()
+
+	var startContent string
+	readChan := setupReadRequest(t, l, &startContent, "REQUEST OK\n")
+
+	client := New(socketFile)
+	err := client.Mount("/src", "/dst", "ext4", 0, "", time.Second)
+	tt.TestExpectSuccess(t, err)
+
+	select {
+	case <-readChan:
+	case <-time.After(time.Second):
+		tt.Fatalf(t, "Expected to have read client response within 1 second")
+	}
+
+	expectedRequest := "1\n2\n3\n5\nMOUNT4\n/src4\n/dst3\n4\next41\n00\n"
 	tt.TestEqual(t, startContent, expectedRequest)
 }
 

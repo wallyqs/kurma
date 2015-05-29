@@ -242,6 +242,8 @@ static int outer_done(struct request *r)
 		exec_request(r);
 	} else if (!strncmp(r->data[0][0], "START", 6)) {
 		start_request(r);
+	} else if (!strncmp(r->data[0][0], "MOUNT", 6)) {
+		mount_request(r);
 	} else if (!strncmp(r->data[0][0], "STATUS", 7)) {
 		status_request(r);
 	} else if (!strncmp(r->data[0][0], "WAIT", 5)) {

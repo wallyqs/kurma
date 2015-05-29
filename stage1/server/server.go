@@ -16,6 +16,7 @@ import (
 type Options struct {
 	ParentCgroupName   string
 	ContainerDirectory string
+	RequiredNamespaces []string
 	ContainerManager   *container.Manager
 }
 
@@ -76,6 +77,7 @@ func (s *Server) initializeManager() (*container.Manager, error) {
 	mopts := &container.Options{
 		ParentCgroupName:   s.options.ParentCgroupName,
 		ContainerDirectory: s.options.ContainerDirectory,
+		RequiredNamespaces: s.options.RequiredNamespaces,
 	}
 
 	m, err := container.NewManager(mopts)
