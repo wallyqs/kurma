@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,7 +19,7 @@ import (
 type Client interface {
 	// Tells the initd to chroot into the given directory. If the request is not
 	// processed in the given timeout then an error will be returned.
-	Chroot(dir string, privileged bool, timeout time.Duration) error
+	Chroot(dir string, timeout time.Duration) error
 
 	// SetHostname tells the initd server to set the hostname of the container.
 	SetHostname(hostname string, timeout time.Duration) error
@@ -34,6 +35,10 @@ type Client interface {
 		name string, command []string, workingDirectory string, env []string,
 		stdout string, stderr, user, group string, timeout time.Duration,
 	) error
+
+	// Mount will perform a mount within the container with the specified
+	// settings.
+	Mount(source, destination, fstype string, flags uintptr, data string, timeout time.Duration) error
 
 	// Returns the status of all named commands in the container.
 	Status(timeout time.Duration) (map[string]string, error)
@@ -257,9 +262,9 @@ func (c *client) SocketFile() string {
 // ----------------
 
 // Implements Client.Chroot()
-func (c *client) Chroot(dir string, privileged bool, timeout time.Duration) error {
+func (c *client) Chroot(dir string, timeout time.Duration) error {
 	// Make the request.
-	request := [][]string{[]string{"CHROOT", dir, fmt.Sprintf("%v", privileged)}}
+	request := [][]string{[]string{"CHROOT", dir}}
 	response, err := c.request(request, timeout)
 	if err != nil {
 		return err
@@ -329,6 +334,29 @@ func (c *client) Start(
 		env,
 		[]string{stdout, stderr},
 		[]string{user, group},
+	}
+
+	// Make the request.
+	response, err := c.request(request, timeout)
+	if err != nil {
+		return err
+	}
+
+	// We expect two lines, ["REQUEST OK", ""]
+	if len(response) != 2 || response[0] != "REQUEST OK" || response[1] != "" {
+		return fmt.Errorf("Invalid response: %#v", response)
+	}
+
+	// Success!
+	return nil
+}
+
+// Mount will perform a mount within the container with the specified
+// settings.
+func (c *client) Mount(source, destination, fstype string, flags uintptr, data string, timeout time.Duration) error {
+	request := [][]string{
+		[]string{"MOUNT", source, destination},
+		[]string{fstype, strconv.FormatUint(uint64(flags), 10), data},
 	}
 
 	// Make the request.

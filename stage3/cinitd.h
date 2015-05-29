@@ -288,10 +288,9 @@ void close_all_fds();
 // Will print the time to current fd, e.g. stdout, stderr
 void server_print_time(FILE *fd);
 
-// Uses pivot_root to enter the root directory structure, chdir, and cleanup
-// after itself. It uses pivot_root instead of chroot to ensure cleaner
-// separation from the root mount namespace.
-int pivot_root(char *root, bool privileged);
+// Uses moveroot to enter the root directory structure, chdir, and cleanup
+// after itself.
+int moveroot(char *root);
 
 // Converts the string of the username into a UID for a process by either
 // looking up the username in /etc/passwd or by converting it to an integer if

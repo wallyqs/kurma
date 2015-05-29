@@ -20,6 +20,7 @@ func main() {
 	opts := &server.Options{
 		ParentCgroupName:   "kurma",
 		ContainerDirectory: directory,
+		RequiredNamespaces: []string{"ipc", "mount", "pid", "uts"},
 	}
 
 	s := server.New(opts)

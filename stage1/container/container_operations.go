@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -238,6 +239,53 @@ func (c *Container) launchStage2() error {
 		if piso, ok := iso.Value().(*schema.HostPrivileged); ok {
 			if *piso {
 				launcher.HostPrivileged = true
+
+				// create the mount point
+				podsDest, err := c.ensureContainerPathExists("host/pods")
+				if err != nil {
+					return err
+				}
+				procDest, err := c.ensureContainerPathExists("host/proc")
+				if err != nil {
+					return err
+				}
+
+				podsMount := strings.Replace(podsDest, c.stage3Path(), client.DefaultChrootPath, 1)
+				procMount := strings.Replace(procDest, c.stage3Path(), client.DefaultChrootPath, 1)
+
+				// create the mount point definitions for host access
+				launcher.MountPoints = []*client.MountPoint{
+					// Add the pods mount
+					&client.MountPoint{
+						Source:      c.manager.directory,
+						Destination: podsMount,
+						Flags:       syscall.MS_BIND,
+					},
+					// Make the pods mount read only. This cannot be done all in one, and
+					// needs MS_BIND included to avoid "resource busy" and to ensure we're
+					// only making the bind location read-only, not the parent.
+					&client.MountPoint{
+						Source:      podsMount,
+						Destination: podsMount,
+						Flags:       syscall.MS_BIND | syscall.MS_REMOUNT | syscall.MS_RDONLY,
+					},
+
+					// Add the host's proc filesystem under host/proc. This can be done
+					// for diagnostics of the host's state, and can also be used to get
+					// access to the host's filesystem (via /host/proc/1/root/...). This
+					// is not read-only because making it read only isn't effective. You
+					// can still traverse into .../root/... partitions due to the magic
+					// that is proc and namespaces. Using proc is more useful than root
+					// because it ensures more consistent access to process's actual
+					// filesystem state as it crosses namespaces. Direct bind mounts tend
+					// to miss some child mounts, even when trying to ensure everything is
+					// shared.
+					&client.MountPoint{
+						Source:      "/proc",
+						Destination: procMount,
+						Flags:       syscall.MS_BIND,
+					},
+				}
 			}
 		}
 	}

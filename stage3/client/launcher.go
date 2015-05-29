@@ -37,6 +37,7 @@ type Launcher struct {
 	NewUserNamespace    bool
 
 	HostPrivileged bool
+	MountPoints    []*MountPoint
 	Chroot         bool
 
 	Cgroup *cgroups.Cgroup
@@ -44,6 +45,15 @@ type Launcher struct {
 	Stdin  *os.File
 	Stdout *os.File
 	Stderr *os.File
+}
+
+// MountPoint
+type MountPoint struct {
+	Source      string
+	Destination string
+	FSType      string
+	Flags       uintptr
+	Data        string
 }
 
 // Run will instantiate the container and execute the init process within it. It
@@ -92,9 +102,16 @@ func (l *Launcher) Run() (Client, error) {
 		return nil, err
 	}
 
+	// If MountPoints were defined, then perform them now before we chroot.
+	for _, mp := range l.MountPoints {
+		if err := c.Mount(mp.Source, mp.Destination, mp.FSType, mp.Flags, mp.Data, DefaultTimeout); err != nil {
+			return nil, fmt.Errorf("failed to perform mount in the container: %v", err)
+		}
+	}
+
 	// if the Chroot flag was set, then have the init process chroot itself.
 	if l.Chroot {
-		if err := c.Chroot(DefaultChrootPath, l.HostPrivileged, DefaultTimeout); err != nil {
+		if err := c.Chroot(DefaultChrootPath, DefaultTimeout); err != nil {
 			return nil, fmt.Errorf("failed to chroot the container: %v", err)
 		}
 	}

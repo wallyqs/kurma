@@ -127,21 +127,17 @@ void createroot(char *src, char *dst, bool privileged) {
 	umask(mask);
 }
 
-void enterroot(bool privileged) {
+void enterroot() {
 	if (chdir(root) < 0)
 		error(1, errno, "Failed to chdir into the new root");
-	if (mkdir("host", 0755) < 0)
-		error(1, errno, "Failed to create host to place old filesystem at");
-	if (syscall(__NR_pivot_root, ".", "host") < 0)
-		error(1, errno, "Failed to pivot into new root filesystem");
+	if (mount (root, root, NULL, MS_BIND | MS_REC, NULL) < 0)
+		error(1, errno, "Failed to bind mount the root");
+	if (mount (root, "/", NULL, MS_MOVE, NULL) < 0)
+		error(1, errno, "Failed to move the root");
+	if (chroot (".") < 0)
+		error(1, errno, "Failed to chroot");
 	if (chdir("/") < 0 )
-		error(1, errno, "Failed to detach old root filesystem");
-
-	if (!privileged) {
-		if (umount2("/host", MNT_DETACH) < 0)
-			error(1, errno, "Failed to detach old root filesystem");
-		rmdir("/host");
-	}
+		error(1, errno, "Failed to chdir into /");
 }
 
 void mountproc(void) {

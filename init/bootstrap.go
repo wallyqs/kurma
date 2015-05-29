@@ -53,7 +53,7 @@ func (r *runner) loadConfigurationFile() error {
 
 		// mount the disk
 		diskPath := filepath.Join(mountPath, strings.Replace(device, "/", "_", -1))
-		if err := handleMount(device, diskPath, fstype, ""); err != nil {
+		if err := handleMount(device, diskPath, fstype, 0, ""); err != nil {
 			r.log.Errorf("failed to mount oem config disk %q: %v", device, err)
 			return nil
 		}
@@ -133,7 +133,7 @@ func (r *runner) createSystemMounts() error {
 
 		// perform the mount
 		r.log.Tracef("- mounting %q (type %q) to %q", source, fstype, location)
-		if err := handleMount(source, location, fstype, ""); err != nil {
+		if err := handleMount(source, location, fstype, 0, ""); err != nil {
 			return fmt.Errorf("failed to mount %q: %v", location, err)
 		}
 	}
@@ -166,7 +166,7 @@ func (r *runner) mountCgroups() error {
 	for _, cgrouptype := range cgroupTypes {
 		location := filepath.Join(cgroupsMount, cgrouptype)
 		r.log.Tracef("- mounting cgroup %q to %q", cgrouptype, location)
-		if err := handleMount("none", location, "cgroup", cgrouptype); err != nil {
+		if err := handleMount("none", location, "cgroup", 0, cgrouptype); err != nil {
 			return fmt.Errorf("failed to mount cgroup %q: %v", cgrouptype, err)
 		}
 
@@ -255,7 +255,7 @@ func (r *runner) mountDisks() error {
 
 		// mount it
 		diskPath := filepath.Join(mountPath, strings.Replace(device, "/", "_", -1))
-		if err := handleMount(device, diskPath, fstype, ""); err != nil {
+		if err := handleMount(device, diskPath, fstype, 0, ""); err != nil {
 			r.log.Errorf("failed to mount disk %q: %v", device, err)
 			continue
 		}

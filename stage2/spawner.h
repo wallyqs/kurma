@@ -120,7 +120,7 @@ int flags_for_clone(clone_destination_data *args);
 // mount.c
 char *tmpdir(void);
 void createroot(char *src, char *dst, bool privileged);
-void enterroot(bool privileged);
+void enterroot();
 void mountproc(void);
 
 // util.c
