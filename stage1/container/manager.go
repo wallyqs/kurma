@@ -5,6 +5,9 @@ package container
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	kschema "github.com/apcera/kurma/schema"
@@ -20,6 +23,7 @@ import (
 type Options struct {
 	ParentCgroupName   string
 	ContainerDirectory string
+	VolumeDirectory    string
 	RequiredNamespaces []string
 }
 
@@ -31,8 +35,11 @@ type Manager struct {
 	containers     map[string]*Container
 	containersLock sync.RWMutex
 
+	volumeDirectory string
+	volumeLock      sync.Mutex
+
 	cgroup             *cgroups.Cgroup
-	directory          string
+	containerDirectory string
 	requiredNamespaces []string
 }
 
@@ -54,7 +61,8 @@ func NewManager(opts *Options) (*Manager, error) {
 	m := &Manager{
 		Log:                logray.New(),
 		containers:         make(map[string]*Container),
-		directory:          opts.ContainerDirectory,
+		containerDirectory: opts.ContainerDirectory,
+		volumeDirectory:    opts.VolumeDirectory,
 		cgroup:             cg,
 		requiredNamespaces: opts.RequiredNamespaces,
 	}
@@ -177,4 +185,22 @@ func (manager *Manager) Container(uuid string) *Container {
 	manager.containersLock.RLock()
 	defer manager.containersLock.RUnlock()
 	return manager.containers[uuid]
+}
+
+// getVolumePath will get the absolute path on the host to the named volume. It
+// will also ensure that the volume name exists within the volumes directory.
+func (manager *Manager) getVolumePath(name string) (string, error) {
+	if !types.ValidACName.MatchString(name) {
+		return "", fmt.Errorf("invalid characters present in volume name")
+	}
+
+	volumePath := filepath.Join(manager.volumeDirectory, name)
+
+	manager.volumeLock.Lock()
+	defer manager.volumeLock.Unlock()
+
+	if err := os.Mkdir(volumePath, os.FileMode(0755)); err != nil && !os.IsExist(err) {
+		return "", err
+	}
+	return volumePath, nil
 }

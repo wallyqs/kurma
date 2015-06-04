@@ -11,11 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/apcera/kurma/schema"
+	kschema "github.com/apcera/kurma/schema"
 	"github.com/apcera/kurma/stage3/client"
 	"github.com/apcera/util/envmap"
 	"github.com/apcera/util/hashutil"
 	"github.com/apcera/util/tarhelper"
+	"github.com/appc/spec/schema"
+	"github.com/appc/spec/schema/types"
 )
 
 var (
@@ -28,6 +30,7 @@ var (
 		(*Container).startingEnvironment,
 		(*Container).startingCgroups,
 		(*Container).launchStage2,
+		(*Container).startApp,
 	}
 
 	// These are the functions that will be called in order to handle container
@@ -45,7 +48,7 @@ func (c *Container) startingBaseDirectories() error {
 	c.log.Debug("Setting up directories.")
 
 	// This is the top level directory that we will create for this container.
-	c.directory = filepath.Join(c.manager.directory, c.ShortName())
+	c.directory = filepath.Join(c.manager.containerDirectory, c.ShortName())
 
 	// Make the directories.
 	mode := os.FileMode(0755)
@@ -215,8 +218,8 @@ func (c *Container) launchStage2() error {
 
 	// Configure which linux namespaces to create
 	nsisolators := false
-	if iso := c.image.App.Isolators.GetByName(schema.LinuxNamespacesName); iso != nil {
-		if niso, ok := iso.Value().(*schema.LinuxNamespaces); ok {
+	if iso := c.image.App.Isolators.GetByName(kschema.LinuxNamespacesName); iso != nil {
+		if niso, ok := iso.Value().(*kschema.LinuxNamespaces); ok {
 			launcher.NewIPCNamespace = niso.IPC()
 			launcher.NewMountNamespace = niso.Mount()
 			launcher.NewNetworkNamespace = niso.Net()
@@ -235,8 +238,8 @@ func (c *Container) launchStage2() error {
 	}
 
 	// Check for a privileged isolator
-	if iso := c.image.App.Isolators.GetByName(schema.HostPrivilegedName); iso != nil {
-		if piso, ok := iso.Value().(*schema.HostPrivileged); ok {
+	if iso := c.image.App.Isolators.GetByName(kschema.HostPrivilegedName); iso != nil {
+		if piso, ok := iso.Value().(*kschema.HostPrivileged); ok {
 			if *piso {
 				launcher.HostPrivileged = true
 
@@ -257,7 +260,7 @@ func (c *Container) launchStage2() error {
 				launcher.MountPoints = []*client.MountPoint{
 					// Add the pods mount
 					&client.MountPoint{
-						Source:      c.manager.directory,
+						Source:      c.manager.containerDirectory,
 						Destination: podsMount,
 						Flags:       syscall.MS_BIND,
 					},
@@ -286,7 +289,68 @@ func (c *Container) launchStage2() error {
 						Flags:       syscall.MS_BIND,
 					},
 				}
+
+				// If a volume directory is defined, then map it in as well.
+				if c.manager.volumeDirectory != "" {
+					volumesDest, err := c.ensureContainerPathExists("host/volumes")
+					if err != nil {
+						return err
+					}
+					volumesMount := strings.Replace(volumesDest, c.stage3Path(), client.DefaultChrootPath, 1)
+					launcher.MountPoints = append(launcher.MountPoints,
+						&client.MountPoint{
+							Source:      c.manager.volumeDirectory,
+							Destination: volumesMount,
+							Flags:       syscall.MS_BIND,
+						})
+				}
 			}
+		}
+	}
+
+	// Apply any volumes that are needed as mount points on the launcher
+	if c.manager.volumeDirectory != "" {
+		podApp := c.pod.Apps.Get(c.image.Name)
+		for _, mp := range c.image.App.MountPoints {
+			hostPath, err := c.manager.getVolumePath(mp.Name.String())
+			if err != nil {
+				return err
+			}
+
+			podPath, err := c.ensureContainerPathExists(mp.Path)
+			if err != nil {
+				return err
+			}
+			podMount := strings.Replace(podPath, c.stage3Path(), client.DefaultChrootPath, 1)
+
+			launcher.MountPoints = append(launcher.MountPoints, &client.MountPoint{
+				Source:      hostPath,
+				Destination: podMount,
+				Flags:       syscall.MS_BIND,
+			})
+
+			// If the mount point should be read only, then add a second mount handler
+			// to trigger it to be read-only.
+			if mp.ReadOnly {
+				launcher.MountPoints = append(launcher.MountPoints, &client.MountPoint{
+					Source:      hostPath,
+					Destination: podMount,
+					Flags:       syscall.MS_BIND | syscall.MS_REMOUNT | syscall.MS_RDONLY,
+				})
+			}
+
+			// Add to the PodManifest
+			ro := mp.ReadOnly
+			podApp.Mounts = append(podApp.Mounts, schema.Mount{
+				Volume:     mp.Name,
+				MountPoint: mp.Name,
+			})
+			c.pod.Volumes = append(c.pod.Volumes, types.Volume{
+				Name:     mp.Name,
+				Kind:     "host",
+				Source:   hostPath,
+				ReadOnly: &ro,
+			})
 		}
 	}
 
@@ -298,7 +362,17 @@ func (c *Container) launchStage2() error {
 	c.initdClient = client
 	c.mutex.Unlock()
 
-	// iterate the command arguments and fill in any potential environment variable references
+	c.log.Trace("Done starting stage 2.")
+	return nil
+}
+
+// startApp will start the application defined in the image manifest within the
+// pod.
+func (c *Container) startApp() error {
+	client := c.getInitdClient()
+
+	// iterate the command arguments and fill in any potential environment
+	// variable references
 	envmap := c.environment.Map()
 	envfunc := func(env string) string { return envmap[env] }
 	cmdargs := make([]string, len(c.image.App.Exec))
@@ -315,7 +389,7 @@ func (c *Container) launchStage2() error {
 
 	c.log.Tracef("Launching application [%q:%q]: %#v", c.image.App.User, c.image.App.Group, cmdargs)
 	c.log.Tracef("Application environment: %#v", c.environment.Strings())
-	err = client.Start(
+	err := client.Start(
 		"app", cmdargs, workingDirectory, c.environment.Strings(),
 		"/app.stdout", "/app.stderr",
 		c.image.App.User, c.image.App.Group,
@@ -328,7 +402,6 @@ func (c *Container) launchStage2() error {
 	// processes die.
 	go c.waitLoop()
 
-	c.log.Trace("Done starting stage 2.")
 	return nil
 }
 
