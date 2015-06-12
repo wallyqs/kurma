@@ -310,7 +310,7 @@ func (c *Container) launchStage2() error {
 
 	// Apply any volumes that are needed as mount points on the launcher
 	if c.manager.volumeDirectory != "" {
-		podApp := c.pod.Apps.Get(c.image.Name)
+		podApp := c.pod.Apps.Get(types.ACName(c.image.Name.String()))
 		for _, mp := range c.image.App.MountPoints {
 			hostPath, err := c.manager.getVolumePath(mp.Name.String())
 			if err != nil {

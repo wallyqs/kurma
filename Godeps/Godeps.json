@@ -56,13 +56,13 @@
 		},
 		{
 			"ImportPath": "github.com/appc/spec/discovery",
-			"Comment": "v0.5.2-5-g0d69fdd",
-			"Rev": "0d69fddf0a40099567332908f4e9615bf9539a02"
+			"Comment": "v0.6.0",
+			"Rev": "d427c5c1c3c40eacb71605b389dfab941437a809"
 		},
 		{
 			"ImportPath": "github.com/appc/spec/schema",
-			"Comment": "v0.5.2-5-g0d69fdd",
-			"Rev": "0d69fddf0a40099567332908f4e9615bf9539a02"
+			"Comment": "v0.6.0",
+			"Rev": "d427c5c1c3c40eacb71605b389dfab941437a809"
 		},
 		{
 			"ImportPath": "github.com/bradfitz/http2",
