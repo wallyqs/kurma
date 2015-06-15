@@ -194,13 +194,17 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 		}
 
 		// --------------------------------------------------------------------
-		// Step 12: Remove all existing environment variables.
+		// Step 12: Remove all existing environment variables. Set
+		// umask to a sane fixed value so IM's umask won't affect the
+		// container.
 		// --------------------------------------------------------------------
 		environ = NULL;
+		umask(022);
 
 		// --------------------------------------------------------------------
 		// Step 13: Actually perform the exec at this point.
 		// --------------------------------------------------------------------
+
 		DEBUG("Exec %s\n", args->command);
 		execvpe(args->command, args->args, args->environment);
 		error(1, errno, "execvpe");
