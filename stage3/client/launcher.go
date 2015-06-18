@@ -39,6 +39,7 @@ type Launcher struct {
 	HostPrivileged bool
 	MountPoints    []*MountPoint
 	Chroot         bool
+	Debug          bool
 
 	Cgroup *cgroups.Cgroup
 
@@ -84,6 +85,11 @@ func (l *Launcher) Run() (Client, error) {
 			"INITD_INTERCEPT=1",
 			fmt.Sprintf("INITD_SOCKET=%s", l.SocketPath),
 		},
+	}
+
+	// Check if Debug is set
+	if l.Debug {
+		launcher.Environment = append(launcher.Environment, "INITD_DEBUG=1")
 	}
 
 	// get the executable path to ourself
