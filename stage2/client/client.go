@@ -148,10 +148,10 @@ func (l *Launcher) generateArgs(cmdargs []string) ([]string, []*os.File) {
 
 	// If user namespaces are to be used, then add the parameter to populate it
 	// and the uid and gid maps.
-	// if l.UserNamespace > 0 || l.NewUserNamespace {
-	// 	args = append(args, "--uidmap", l.Uidmap)
-	// 	args = append(args, "--gidmap", l.Gidmap)
-	// }
+	if l.UserNamespace > 0 || l.NewUserNamespace {
+		args = append(args, "--uidmap", l.Uidmap)
+		args = append(args, "--gidmap", l.Gidmap)
+	}
 
 	// Check for a privileged isolator
 	if l.HostPrivileged {
