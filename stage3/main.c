@@ -144,6 +144,7 @@ void initd_main_loop(int socket_fd, int signal_fd)
 		}
 		for (ws = waiting_socket_head; ws != NULL; ws = ws->next) {
 			count++;
+			FD_SET(ws->fd, &set_reads);
 			FD_SET(ws->fd, &set_excepts);
 			if (ws->fd > maxfd) { maxfd = ws->fd; }
 		}
@@ -264,8 +265,35 @@ void initd_main_loop(int socket_fd, int signal_fd)
 				FD_CLR(ws2->fd, &set_excepts);
 				initd_waiting_socket_disconnect(ws2);
 			}
-		}
+			if (FD_ISSET(ws2->fd, &set_reads)) {
+				struct sockaddr_un peer;
+				int len = sizeof(peer);
+				FD_CLR(ws2->fd, &set_reads);
 
+				// work around a select() bug in which select() may spuriously
+				// return incorrect read-ready notification.
+				if (getpeername(ws2->fd, (struct sockaddr *)&peer,
+									&len) == -1) {
+					INFO("[%d] getpeername returned %s\n", ws2->fd,
+						strerror(errno));
+				    initd_waiting_socket_disconnect(ws2);
+				} else {
+				    len = sizeof(peer);
+					int rc = read(ws2->fd, (void *)&peer, len);
+					if (rc <= 0) {
+						// EOF or errors
+					    DEBUG("[%d] read returned %s\n", ws2->fd,
+							strerror(errno));
+				        initd_waiting_socket_disconnect(ws2);
+					} else {
+						// unexpected msg on waiting fd, log an error
+						// and continue
+					    ERROR("[%d] unexpected msg from peer: %s len %d\n",
+						    ws2->fd, peer.sun_path, rc);
+					}
+				}
+			}
+		}
 	}
 }
 
