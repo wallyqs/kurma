@@ -276,20 +276,20 @@ void initd_main_loop(int socket_fd, int signal_fd)
 									&len) == -1) {
 					INFO("[%d] getpeername returned %s\n", ws2->fd,
 						strerror(errno));
-				    initd_waiting_socket_disconnect(ws2);
+					initd_waiting_socket_disconnect(ws2);
 				} else {
 				    len = sizeof(peer);
 					int rc = read(ws2->fd, (void *)&peer, len);
 					if (rc <= 0) {
 						// EOF or errors
-					    DEBUG("[%d] read returned %s\n", ws2->fd,
+						DEBUG("[%d] read returned %s\n", ws2->fd,
 							strerror(errno));
-				        initd_waiting_socket_disconnect(ws2);
+						initd_waiting_socket_disconnect(ws2);
 					} else {
 						// unexpected msg on waiting fd, log an error
 						// and continue
-					    ERROR("[%d] unexpected msg from peer: %s len %d\n",
-						    ws2->fd, peer.sun_path, rc);
+						ERROR("[%d] unexpected msg from peer: len %d\n",
+						    ws2->fd, rc);
 					}
 				}
 			}
