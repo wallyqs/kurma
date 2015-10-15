@@ -47,7 +47,7 @@ func (s *Server) Start() error {
 	defer l.Close()
 
 	// create the client RPC connection to the host
-	conn, err := grpc.Dial("127.0.0.1:12311")
+	conn, err := grpc.Dial("127.0.0.1:12311", grpc.WithInsecure())
 	if err != nil {
 		return err
 	}

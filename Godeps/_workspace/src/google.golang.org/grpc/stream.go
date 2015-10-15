@@ -36,8 +36,11 @@ package grpc
 import (
 	"errors"
 	"io"
+	"sync"
+	"time"
 
 	"golang.org/x/net/context"
+	"golang.org/x/net/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/transport"
@@ -93,26 +96,41 @@ type ClientStream interface {
 // NewClientStream creates a new Stream for the client side. This is called
 // by generated code.
 func NewClientStream(ctx context.Context, desc *StreamDesc, cc *ClientConn, method string, opts ...CallOption) (ClientStream, error) {
+	var (
+		t   transport.ClientTransport
+		err error
+	)
+	t, err = cc.dopts.picker.Pick(ctx)
+	if err != nil {
+		return nil, toRPCErr(err)
+	}
 	// TODO(zhaoq): CallOption is omitted. Add support when it is needed.
 	callHdr := &transport.CallHdr{
 		Host:   cc.authority,
 		Method: method,
 	}
-	t, _, err := cc.wait(ctx, 0)
-	if err != nil {
-		return nil, toRPCErr(err)
+	cs := &clientStream{
+		desc:    desc,
+		codec:   cc.dopts.codec,
+		tracing: EnableTracing,
+	}
+	if cs.tracing {
+		cs.trInfo.tr = trace.New("grpc.Sent."+methodFamily(method), method)
+		cs.trInfo.firstLine.client = true
+		if deadline, ok := ctx.Deadline(); ok {
+			cs.trInfo.firstLine.deadline = deadline.Sub(time.Now())
+		}
+		cs.trInfo.tr.LazyLog(&cs.trInfo.firstLine, false)
+		ctx = trace.NewContext(ctx, cs.trInfo.tr)
 	}
 	s, err := t.NewStream(ctx, callHdr)
 	if err != nil {
 		return nil, toRPCErr(err)
 	}
-	return &clientStream{
-		t:     t,
-		s:     s,
-		p:     &parser{s: s},
-		desc:  desc,
-		codec: cc.dopts.codec,
-	}, nil
+	cs.t = t
+	cs.s = s
+	cs.p = &parser{s: s}
+	return cs, nil
 }
 
 // clientStream implements a client side Stream.
@@ -122,6 +140,13 @@ type clientStream struct {
 	p     *parser
 	desc  *StreamDesc
 	codec Codec
+
+	tracing bool // set to EnableTracing when the clientStream is created.
+
+	mu sync.Mutex // protects trInfo.tr
+	// trInfo.tr is set when the clientStream is created (if EnableTracing is true),
+	// and is set to nil when the clientStream's finish method is called.
+	trInfo traceInfo
 }
 
 func (cs *clientStream) Context() context.Context {
@@ -143,6 +168,13 @@ func (cs *clientStream) Trailer() metadata.MD {
 }
 
 func (cs *clientStream) SendMsg(m interface{}) (err error) {
+	if cs.tracing {
+		cs.mu.Lock()
+		if cs.trInfo.tr != nil {
+			cs.trInfo.tr.LazyLog(&payload{sent: true, msg: m}, true)
+		}
+		cs.mu.Unlock()
+	}
 	defer func() {
 		if err == nil || err == io.EOF {
 			return
@@ -161,7 +193,20 @@ func (cs *clientStream) SendMsg(m interface{}) (err error) {
 
 func (cs *clientStream) RecvMsg(m interface{}) (err error) {
 	err = recv(cs.p, cs.codec, m)
+	defer func() {
+		// err != nil indicates the termination of the stream.
+		if err != nil {
+			cs.finish(err)
+		}
+	}()
 	if err == nil {
+		if cs.tracing {
+			cs.mu.Lock()
+			if cs.trInfo.tr != nil {
+				cs.trInfo.tr.LazyLog(&payload{sent: false, msg: m}, true)
+			}
+			cs.mu.Unlock()
+		}
 		if !cs.desc.ClientStreams || cs.desc.ServerStreams {
 			return
 		}
@@ -204,6 +249,24 @@ func (cs *clientStream) CloseSend() (err error) {
 	return
 }
 
+func (cs *clientStream) finish(err error) {
+	if !cs.tracing {
+		return
+	}
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	if cs.trInfo.tr != nil {
+		if err == nil || err == io.EOF {
+			cs.trInfo.tr.LazyPrintf("RPC: [OK]")
+		} else {
+			cs.trInfo.tr.LazyPrintf("RPC: [%v]", err)
+			cs.trInfo.tr.SetError()
+		}
+		cs.trInfo.tr.Finish()
+		cs.trInfo.tr = nil
+	}
+}
+
 // ServerStream defines the interface a server stream has to satisfy.
 type ServerStream interface {
 	// SendHeader sends the header metadata. It should not be called
@@ -224,6 +287,9 @@ type serverStream struct {
 	codec      Codec
 	statusCode codes.Code
 	statusDesc string
+	trInfo     *traceInfo
+
+	mu sync.Mutex // protects trInfo.tr after the service handler runs.
 }
 
 func (ss *serverStream) Context() context.Context {
@@ -242,7 +308,21 @@ func (ss *serverStream) SetTrailer(md metadata.MD) {
 	return
 }
 
-func (ss *serverStream) SendMsg(m interface{}) error {
+func (ss *serverStream) SendMsg(m interface{}) (err error) {
+	defer func() {
+		if ss.trInfo != nil {
+			ss.mu.Lock()
+			if ss.trInfo.tr != nil {
+				if err == nil {
+					ss.trInfo.tr.LazyLog(&payload{sent: true, msg: m}, true)
+				} else {
+					ss.trInfo.tr.LazyLog(&fmtStringer{"%v", []interface{}{err}}, true)
+					ss.trInfo.tr.SetError()
+				}
+			}
+			ss.mu.Unlock()
+		}
+	}()
 	out, err := encode(ss.codec, m, compressionNone)
 	if err != nil {
 		err = transport.StreamErrorf(codes.Internal, "grpc: %v", err)
@@ -251,6 +331,20 @@ func (ss *serverStream) SendMsg(m interface{}) error {
 	return ss.t.Write(ss.s, out, &transport.Options{Last: false})
 }
 
-func (ss *serverStream) RecvMsg(m interface{}) error {
+func (ss *serverStream) RecvMsg(m interface{}) (err error) {
+	defer func() {
+		if ss.trInfo != nil {
+			ss.mu.Lock()
+			if ss.trInfo.tr != nil {
+				if err == nil {
+					ss.trInfo.tr.LazyLog(&payload{sent: false, msg: m}, true)
+				} else if err != io.EOF {
+					ss.trInfo.tr.LazyLog(&fmtStringer{"%v", []interface{}{err}}, true)
+					ss.trInfo.tr.SetError()
+				}
+			}
+			ss.mu.Unlock()
+		}
+	}()
 	return recv(ss.p, ss.codec, m)
 }

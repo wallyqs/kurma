@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -87,6 +88,12 @@ type Untar struct {
 	// IncludedPermissionMask is combined with the uploaded file mask as a way to
 	// ensure a base level of permissions for all objects.
 	IncludedPermissionMask os.FileMode
+
+	// PathWhitelist provides a list of files that will only be extracted from the
+	// provided tarball. If PathWhitelist is not set, then all files will be
+	// allowed. If it is set, then only files matching the specified files
+	// (/etc/file) or directories (/etc/dir/) will be allowed.
+	PathWhitelist []string
 
 	// OwnerMappingFunc is used to give the caller the ability to control the
 	// mapping of UIDs in the tar into what they should be on the host. It is only
@@ -241,6 +248,12 @@ func (u *Untar) processEntry(header *tar.Header) error {
 		return err
 	}
 
+	// Ensure that the file is allowed against the current whitelist, if one is
+	// specified.
+	if !u.checkEntryAgainstWhitelist(header) {
+		return nil
+	}
+
 	name := path.Join(u.target, header.Name)
 
 	// resolve the destination and then reset the name based on the resolution
@@ -273,12 +286,18 @@ func (u *Untar) processEntry(header *tar.Header) error {
 		// don't return error if it already exists
 		mode := os.FileMode(0755)
 		if u.PreservePermissions {
-			mode = os.FileMode(header.Mode) | u.IncludedPermissionMask
+			mode = header.FileInfo().Mode() | u.IncludedPermissionMask
 		}
 
 		// create the directory
 		err := os.MkdirAll(name, mode)
 		if err != nil {
+			return err
+		}
+
+		// Perform a chmod after creation to ensure modes are applied directly,
+		// regardless of umask.
+		if err := os.Chmod(name, mode); err != nil {
 			return err
 		}
 
@@ -318,7 +337,7 @@ func (u *Untar) processEntry(header *tar.Header) error {
 		// determine the mode to use
 		mode := os.FileMode(0644)
 		if u.PreservePermissions {
-			mode = os.FileMode(header.Mode) | u.IncludedPermissionMask
+			mode = header.FileInfo().Mode() | u.IncludedPermissionMask
 		}
 
 		// open the file
@@ -327,6 +346,12 @@ func (u *Untar) processEntry(header *tar.Header) error {
 			return err
 		}
 		defer f.Close()
+
+		// Perform a chmod after creation to ensure modes are applied directly,
+		// regardless of umask.
+		if err := f.Chmod(mode); err != nil {
+			return err
+		}
 
 		// SETUID/SETGID needs to be defered...
 		// The standard chown call is after handling the files, since we want to
@@ -368,13 +393,18 @@ func (u *Untar) processEntry(header *tar.Header) error {
 		// determine the mode to use
 		mode := os.FileMode(0644)
 		if u.PreservePermissions {
-			mode = os.FileMode(header.Mode) | u.IncludedPermissionMask
+			mode = header.FileInfo().Mode() | u.IncludedPermissionMask
 		}
 
 		// syscall to mknod
 		dev := makedev(header.Devmajor, header.Devminor)
-		osUmask(0000)
 		if err := osMknod(name, devmode|uint32(mode), dev); err != nil {
+			return err
+		}
+
+		// Perform a chmod after creation to ensure modes are applied directly,
+		// regardless of umask.
+		if err := os.Chmod(name, mode|os.FileMode(devmode)); err != nil {
 			return err
 		}
 
@@ -518,6 +548,38 @@ func (u *Untar) convertToDestination(dir string) (string, error) {
 
 	// not a symlink, so return the dir
 	return dir, nil
+}
+
+// checkEntryAgainstWhitelist will check if the specified file should be allowed
+// to be extracted against the current PathWhitelist. If no PathWhitelist is
+// allowed, then it will allow all files.
+func (u *Untar) checkEntryAgainstWhitelist(header *tar.Header) bool {
+	if len(u.PathWhitelist) == 0 {
+		return true
+	}
+
+	name := "/" + filepath.Clean(header.Name)
+
+	for _, p := range u.PathWhitelist {
+		// Whitelist: "/foo"  File: "/foo"
+		if p == name {
+			return true
+		}
+
+		if strings.HasSuffix(p, "/") {
+			// Whitelist: "/usr/bin/"  Dir: "/usr/bin"
+			if p == name+"/" && header.Typeflag == tar.TypeDir {
+				return true
+			}
+
+			// Whitelist: "/usr/bin/"  File: "/usr/bin/bash"
+			if strings.HasPrefix(name, p) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func lazyChmod(name string, m os.FileMode) {

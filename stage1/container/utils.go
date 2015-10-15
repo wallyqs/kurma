@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/apcera/util/proc"
+	"github.com/appc/spec/schema/types"
 )
 
 func (c *Container) imageManifestPath() string {
@@ -224,4 +225,13 @@ func (c *Container) resolveSymlinkDir(name string) (string, error) {
 	}
 
 	return filepath.Join(root, containerPath), nil
+}
+
+func convertACIdentifierToACName(name types.ACIdentifier) (*types.ACName, error) {
+	parts := strings.Split(name.String(), "/")
+	n, err := types.SanitizeACName(parts[len(parts)-1])
+	if err != nil {
+		return nil, err
+	}
+	return types.NewACName(n)
 }

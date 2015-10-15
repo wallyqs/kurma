@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 #include "spawner.h"

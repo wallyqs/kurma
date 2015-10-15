@@ -342,8 +342,8 @@ func (c *Container) launchStage2() error {
 			// Add to the PodManifest
 			ro := mp.ReadOnly
 			podApp.Mounts = append(podApp.Mounts, schema.Mount{
-				Volume:     mp.Name,
-				MountPoint: mp.Name,
+				Volume: mp.Name,
+				Path:   mp.Name.String(),
 			})
 			c.pod.Volumes = append(c.pod.Volumes, types.Volume{
 				Name:     mp.Name,

@@ -107,7 +107,7 @@ func main() {
 		return
 	}
 
-	conn, err := grpc.Dial(determineKurmaHostPort())
+	conn, err := grpc.Dial(determineKurmaHostPort(), grpc.WithInsecure())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, terminal.Colorize(terminal.ColorError, ERROR_PREFIX+"%s\n"), err.Error())
 		exitcode = 1
@@ -115,7 +115,6 @@ func main() {
 	}
 	defer conn.Close()
 	cmd.Client = pb.NewKurmaClient(conn)
-
 	exitcode = runCommand(cmd)
 }
 

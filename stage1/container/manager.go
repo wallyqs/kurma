@@ -118,7 +118,11 @@ func (manager *Manager) Create(
 
 	// handle a blank name
 	if name == "" {
-		name = imageManifest.Name.String()
+		n, err := convertACIdentifierToACName(imageManifest.Name)
+		if err != nil {
+			return nil, err
+		}
+		name = n.String()
 	}
 
 	// populate the container
