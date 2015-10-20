@@ -4,6 +4,7 @@ package server
 
 import (
 	"net"
+	"os"
 
 	pb "github.com/apcera/kurma/stage1/client"
 	"github.com/apcera/kurma/stage1/container"
@@ -18,6 +19,9 @@ type Options struct {
 	ContainerDirectory string
 	RequiredNamespaces []string
 	ContainerManager   *container.Manager
+	SocketFile         string
+	SocketGroup        *int
+	SocketPermissions  *os.FileMode
 }
 
 // Server represents the process that acts as a daemon to receive container
@@ -40,11 +44,23 @@ func New(options *Options) *Server {
 // Start begins the server. It will return an error if starting the Server
 // fails, or return nil on success.
 func (s *Server) Start() error {
-	l, err := net.Listen("tcp", "127.0.0.1:12311")
+	l, err := net.Listen("unix", s.options.SocketFile)
 	if err != nil {
 		return err
 	}
 	defer l.Close()
+
+	// chmod/chown the socket, if specified
+	if s.options.SocketPermissions != nil {
+		if err := os.Chmod(s.options.SocketFile, *s.options.SocketPermissions); err != nil {
+			return err
+		}
+	}
+	if s.options.SocketGroup != nil {
+		if err := os.Chown(s.options.SocketFile, os.Getuid(), *s.options.SocketGroup); err != nil {
+			return err
+		}
+	}
 
 	// create the RPC handler
 	rpc := &rpcServer{
@@ -62,6 +78,7 @@ func (s *Server) Start() error {
 			return err
 		}
 	}
+	rpc.manager.HostSocketFile = s.options.SocketFile
 
 	// create the gRPC server and run
 	gs := grpc.NewServer()

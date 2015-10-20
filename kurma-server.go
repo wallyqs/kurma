@@ -5,6 +5,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 
 	"github.com/apcera/kurma/stage1/server"
@@ -12,6 +13,11 @@ import (
 )
 
 func main() {
+	var socketfile, parentCgroupName string
+	flag.StringVar(&parentCgroupName, "cgroup", "kurma", "Name of the cgroup to create")
+	flag.StringVar(&socketfile, "socket", "kurma.sock", "Socket file to create")
+	flag.Parse()
+
 	logray.AddDefaultOutput("stdout://", logray.ALL)
 
 	directory, err := os.Getwd()
@@ -20,9 +26,10 @@ func main() {
 	}
 
 	opts := &server.Options{
-		ParentCgroupName:   "kurma",
+		ParentCgroupName:   parentCgroupName,
 		ContainerDirectory: directory,
 		RequiredNamespaces: []string{"ipc", "mount", "pid", "uts"},
+		SocketFile:         socketfile,
 	}
 
 	s := server.New(opts)

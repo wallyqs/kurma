@@ -40,6 +40,8 @@ type Manager struct {
 	cgroup             *cgroups.Cgroup
 	containerDirectory string
 	requiredNamespaces []string
+
+	HostSocketFile string
 }
 
 // NewManager creates a new Manager with the provided options. It will ensure

@@ -4,6 +4,7 @@ package api
 
 import (
 	"net"
+	"time"
 
 	pb "github.com/apcera/kurma/stage1/client"
 	"github.com/apcera/logray"
@@ -47,7 +48,10 @@ func (s *Server) Start() error {
 	defer l.Close()
 
 	// create the client RPC connection to the host
-	conn, err := grpc.Dial("127.0.0.1:12311", grpc.WithInsecure())
+	dialer := func(addr string, timeout time.Duration) (net.Conn, error) {
+		return net.DialTimeout("unix", addr, timeout)
+	}
+	conn, err := grpc.Dial("/var/lib/kurma.sock", grpc.WithDialer(dialer), grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
