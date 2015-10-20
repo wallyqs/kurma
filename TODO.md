@@ -7,8 +7,6 @@
 - [ ] cli: Implement specifying the container name
 - [ ] init: Add ability for arbitruary configuration to be passed to initial
   containers.
-- [ ] stage1: Move local API to use a unix socket rather than localhost.
-- [ ] stage1: Support volumes
 - [ ] stage1: Implement hook calls
 - [ ] stage1: Implement appc isolators for capabilities
 - [ ] stage1: Implement appc isolators for cgroups
@@ -16,6 +14,8 @@
 - [ ] stage1: Re-enable user namespace functionality
 - [ ] Review Manager/Container lock handling
 - [ ] Metadata API support
+- [X] stage1: Move local API to use a unix socket rather than localhost.
+- [X] stage1: Support volumes
 - [X] Look at a futex for protecting concurrent pivot_root calls.
 - [X] cli: Add parameter for speciying a remote host to use
 - [X] stage3: Updated User/Group username/uid handling to 0.6.0 spec
@@ -38,10 +38,10 @@
 - [ ] Multiple apps in a single pod
 - [ ] Configurable configuration datasources
 - [ ] Add whitelist support for where to retrieve an image from
-- [ ] Add baseline enforcement of certain kernel namespaces, like mount, ipc,
-  and pid.
 - [ ] Have enter command look up user shell if none is given and use that for
   exec
+- [X] Add baseline enforcement of certain kernel namespaces, like mount, ipc,
+  and pid.
 - [X] Add support for image retrieval through an http proxy
 - [X] Kernel module scoping for each environment
 

@@ -24,6 +24,16 @@ func validateImageManifest(imageManifest *schema.ImageManifest) error {
 		}
 	}
 
+	// Reject any containers that request host API access. This can only be
+	// started with the local API, not remote API.
+	if iso := imageManifest.App.Isolators.GetByName(kschema.HostApiAccessName); iso != nil {
+		if piso, ok := iso.Value().(*kschema.HostApiAccess); ok {
+			if *piso {
+				return fmt.Errorf("host API access containers cannot be launched remotely")
+			}
+		}
+	}
+
 	// FIXME once network isolation is in, this should force adding the container
 	// namespaces isolator to ensure any remotely sourced images are network
 	// namespaced.

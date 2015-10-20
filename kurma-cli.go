@@ -7,10 +7,12 @@ package main
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/apcera/kurma/client/cli"
 	"github.com/apcera/util/terminal"
@@ -24,7 +26,6 @@ import (
 const (
 	ERROR_PREFIX = "Error: "
 
-	defaultKurmaLocalPort  = "12311"
 	defaultKurmaRemotePort = "12312"
 )
 
@@ -107,7 +108,26 @@ func main() {
 		return
 	}
 
-	conn, err := grpc.Dial(determineKurmaHostPort(), grpc.WithInsecure())
+	dialer := func(addr string, timeout time.Duration) (net.Conn, error) {
+		u, err := url.Parse(addr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process addr: %v", err)
+		}
+
+		switch u.Scheme {
+		case "unix":
+			if u.Path == "" {
+				u.Path = u.Host
+			}
+			return net.DialTimeout(u.Scheme, u.Path, timeout)
+		case "tcp":
+			return net.DialTimeout(u.Scheme, u.Host, timeout)
+		default:
+			return nil, fmt.Errorf("unrecognized network scheme")
+		}
+	}
+
+	conn, err := grpc.Dial(determineKurmaHostPort(), grpc.WithDialer(dialer), grpc.WithInsecure())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, terminal.Colorize(terminal.ColorError, ERROR_PREFIX+"%s\n"), err.Error())
 		exitcode = 1
@@ -190,10 +210,19 @@ func reportPanic() error {
 }
 
 func determineKurmaHostPort() string {
+	// See if KurmaHost is a socket file
+	if fi, _ := os.Stat(cli.KurmaHost); fi != nil {
+		u := url.URL{Scheme: "unix", Path: cli.KurmaHost}
+		return u.String()
+	}
+
 	// quick check if it is referring to the local host
 	ip := net.ParseIP(cli.KurmaHost)
-	if ip != nil && ip.IsLoopback() {
-		return net.JoinHostPort(cli.KurmaHost, defaultKurmaLocalPort)
+	if ip != nil {
+		u := url.URL{Scheme: "tcp", Host: net.JoinHostPort(cli.KurmaHost, defaultKurmaRemotePort)}
+		return u.String()
 	}
-	return net.JoinHostPort(cli.KurmaHost, defaultKurmaRemotePort)
+
+	u := url.URL{Scheme: "unix", Path: "/var/lib/kurma.sock"}
+	return u.String()
 }

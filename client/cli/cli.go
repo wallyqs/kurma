@@ -15,7 +15,6 @@ const (
 	defaultConfirmation = "Is this correct?"
 	askYes              = "Y/n"
 	askNo               = "y/N"
-	defaultKurmaIP      = "127.0.0.1"
 )
 
 var (
@@ -105,6 +104,6 @@ func addGlobalFlags(f *flag.FlagSet) {
 	f.BoolVar(&ShowVersion, "version", false, "")
 	f.BoolVar(&ShowVersion, "ver", false, "")
 	f.BoolVar(&ShowVersion, "v", false, "")
-	f.StringVar(&KurmaHost, "host", defaultKurmaIP, "")
-	f.StringVar(&KurmaHost, "H", defaultKurmaIP, "")
+	f.StringVar(&KurmaHost, "host", "", "")
+	f.StringVar(&KurmaHost, "H", "", "")
 }

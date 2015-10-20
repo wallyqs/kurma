@@ -474,12 +474,22 @@ func (r *runner) startSignalHandling() error {
 
 // startServer begins the main Kurma RPC server and will take over execution.
 func (r *runner) startServer() error {
+	perms := os.FileMode(0770)
+	group := 200
+
 	opts := &server.Options{
-		ContainerManager: r.manager,
+		ContainerManager:  r.manager,
+		SocketFile:        filepath.Join(kurmaPath, "socket"),
+		SocketPermissions: &perms,
+		SocketGroup:       &group,
 	}
 
 	s := server.New(opts)
-	go s.Start()
+	go func() {
+		if err := s.Start(); err != nil {
+			r.log.Errorf("Error with Kurma server: %v", err)
+		}
+	}()
 	return nil
 }
 

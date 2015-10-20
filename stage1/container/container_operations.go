@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	kschema "github.com/apcera/kurma/schema"
 	"github.com/apcera/kurma/stage3/client"
 	"github.com/apcera/util/envmap"
 	"github.com/apcera/util/hashutil"
@@ -216,96 +215,16 @@ func (c *Container) launchStage2() error {
 		Stderr:     stage2Stdout,
 	}
 
-	// Configure which linux namespaces to create
-	nsisolators := false
-	if iso := c.image.App.Isolators.GetByName(kschema.LinuxNamespacesName); iso != nil {
-		if niso, ok := iso.Value().(*kschema.LinuxNamespaces); ok {
-			launcher.NewIPCNamespace = niso.IPC()
-			launcher.NewMountNamespace = niso.Mount()
-			launcher.NewNetworkNamespace = niso.Net()
-			launcher.NewPIDNamespace = niso.PID()
-			launcher.NewUserNamespace = niso.User()
-			launcher.NewUTSNamespace = niso.UTS()
-			nsisolators = true
-		}
+	// Instrument the isolators that must be done before the chroot operation is
+	// done. These isolators usual deal with low level access or host access.
+	if err := c.setupLinuxNamespaceIsolator(launcher); err != nil {
+		return err
 	}
-	if !nsisolators {
-		// set some defaults if no namespace isolator was given
-		launcher.NewIPCNamespace = true
-		launcher.NewMountNamespace = true
-		launcher.NewPIDNamespace = true
-		launcher.NewUTSNamespace = true
+	if err := c.setupHostPrivilegeIsolator(launcher); err != nil {
+		return err
 	}
-
-	// Check for a privileged isolator
-	if iso := c.image.App.Isolators.GetByName(kschema.HostPrivilegedName); iso != nil {
-		if piso, ok := iso.Value().(*kschema.HostPrivileged); ok {
-			if *piso {
-				launcher.HostPrivileged = true
-
-				// create the mount point
-				podsDest, err := c.ensureContainerPathExists("host/pods")
-				if err != nil {
-					return err
-				}
-				procDest, err := c.ensureContainerPathExists("host/proc")
-				if err != nil {
-					return err
-				}
-
-				podsMount := strings.Replace(podsDest, c.stage3Path(), client.DefaultChrootPath, 1)
-				procMount := strings.Replace(procDest, c.stage3Path(), client.DefaultChrootPath, 1)
-
-				// create the mount point definitions for host access
-				launcher.MountPoints = []*client.MountPoint{
-					// Add the pods mount
-					&client.MountPoint{
-						Source:      c.manager.containerDirectory,
-						Destination: podsMount,
-						Flags:       syscall.MS_BIND,
-					},
-					// Make the pods mount read only. This cannot be done all in one, and
-					// needs MS_BIND included to avoid "resource busy" and to ensure we're
-					// only making the bind location read-only, not the parent.
-					&client.MountPoint{
-						Source:      podsMount,
-						Destination: podsMount,
-						Flags:       syscall.MS_BIND | syscall.MS_REMOUNT | syscall.MS_RDONLY,
-					},
-
-					// Add the host's proc filesystem under host/proc. This can be done
-					// for diagnostics of the host's state, and can also be used to get
-					// access to the host's filesystem (via /host/proc/1/root/...). This
-					// is not read-only because making it read only isn't effective. You
-					// can still traverse into .../root/... partitions due to the magic
-					// that is proc and namespaces. Using proc is more useful than root
-					// because it ensures more consistent access to process's actual
-					// filesystem state as it crosses namespaces. Direct bind mounts tend
-					// to miss some child mounts, even when trying to ensure everything is
-					// shared.
-					&client.MountPoint{
-						Source:      "/proc",
-						Destination: procMount,
-						Flags:       syscall.MS_BIND,
-					},
-				}
-
-				// If a volume directory is defined, then map it in as well.
-				if c.manager.volumeDirectory != "" {
-					volumesDest, err := c.ensureContainerPathExists("host/volumes")
-					if err != nil {
-						return err
-					}
-					volumesMount := strings.Replace(volumesDest, c.stage3Path(), client.DefaultChrootPath, 1)
-					launcher.MountPoints = append(launcher.MountPoints,
-						&client.MountPoint{
-							Source:      c.manager.volumeDirectory,
-							Destination: volumesMount,
-							Flags:       syscall.MS_BIND,
-						})
-				}
-			}
-		}
+	if err := c.setupHostApiAccessIsolator(launcher); err != nil {
+		return err
 	}
 
 	// Apply any volumes that are needed as mount points on the launcher
