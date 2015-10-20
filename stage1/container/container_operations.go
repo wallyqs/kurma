@@ -393,6 +393,7 @@ func (c *Container) startApp() error {
 		"app", cmdargs, workingDirectory, c.environment.Strings(),
 		"/app.stdout", "/app.stderr",
 		c.image.App.User, c.image.App.Group,
+		c.image.App.SupplementaryGIDs,
 		time.Second*5)
 	if err != nil {
 		return err
