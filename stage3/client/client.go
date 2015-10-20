@@ -33,7 +33,7 @@ type Client interface {
 	// Starts a given named command within the initd server.
 	Start(
 		name string, command []string, workingDirectory string, env []string,
-		stdout string, stderr, user, group string, timeout time.Duration,
+		stdout string, stderr, user, group string, supplementaryGids []int, timeout time.Duration,
 	) error
 
 	// Mount will perform a mount within the container with the specified
@@ -326,7 +326,7 @@ func (c *client) Exec(
 // Issues a request to start a new command.
 func (c *client) Start(
 	name string, command []string, workingDirectory string, env []string, stdout string, stderr,
-	user, group string, timeout time.Duration,
+	user, group string, supplementaryGids []int, timeout time.Duration,
 ) error {
 	request := [][]string{
 		[]string{"START", name},
@@ -336,6 +336,13 @@ func (c *client) Start(
 		[]string{stdout, stderr},
 		[]string{user, group},
 	}
+
+	// Convert the supplementaryGids into a string array
+	suppGidsStr := make([]string, len(supplementaryGids))
+	for i := 0; i < len(supplementaryGids); i++ {
+		suppGidsStr[i] = strconv.Itoa(supplementaryGids[i])
+	}
+	request = append(request, suppGidsStr)
 
 	// Make the request.
 	response, err := c.request(request, timeout)

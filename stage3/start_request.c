@@ -7,6 +7,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -27,6 +28,7 @@ void start_request(struct request *r)
 	pid_t pid;
 	uid_t uid;
 	gid_t gid;
+	gid_t	*supplementary_gids = NULL;
 	unsigned long int ul;
 
 	// The expected protocol for an start statement looks like this:
@@ -37,13 +39,14 @@ void start_request(struct request *r)
 	//   { ["<ENV=VALUE>", ...]},
 	//   { "<STDOUTFILE>", "<STDERRFILE>" },
 	//   { "<UID>", "<GID>" },
+	//   { ["supplementaryGids1", "supplementaryGids2", ...]},
 	// }
 
 	INFO("[%d] START request.\n", r->fd);
 
 	// Protocol error conditions.
 	if (
-			(r->outer_len != 6) ||
+			(r->outer_len != 7) ||
 			// START/NAME
 			(r->data[0][1] != NULL && r->data[0][2] != NULL) ||
 			// COMMAND
@@ -59,8 +62,9 @@ void start_request(struct request *r)
 			(r->data[5][0] == NULL) ||
 			(r->data[5][1] == NULL) ||
 			(r->data[5][2] != NULL) ||
+			// SUPPLEMENTARY GIDs (nullable)
 			// END
-			(r->data[6] != NULL))
+			(r->data[7] != NULL))
 	{
 		ERROR("[%d] Protocol error.\n", r->fd);
 		initd_response_protocol_error(r);
@@ -101,6 +105,13 @@ void start_request(struct request *r)
 		return;
 	}
 
+	// Compute the supplementary gids
+	for(i = 0; r->data[6][i] != NULL; i++) {
+		supplementary_gids = realloc(supplementary_gids, sizeof(gid_t) * (i+1));
+		supplementary_gids[i] = atoi(r->data[6][i]);
+	}
+	int len_gids = i;
+
 	fflush(NULL);
 	pid = fork();
 	if (pid == -1) {
@@ -113,7 +124,9 @@ void start_request(struct request *r)
 		close_all_fds();
 		initd_setup_fds(r->data[4][0], r->data[4][1]);
 
-		// Ensure that we are fully root.
+		if (setgroups(len_gids, supplementary_gids) != 0) { _exit(EX_OSERR); }
+
+		// Change to the proper user..
 		if (setregid(gid, gid) != 0) { _exit(EX_OSERR); }
 		if (getgid() != gid) { _exit(EX_OSERR); }
 		if (setreuid(uid, uid) != 0) { _exit(EX_OSERR); }

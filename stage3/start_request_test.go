@@ -37,6 +37,7 @@ func TestUnnamedStartRequest(t *testing.T) {
 		[]string{"KTEST=VTEST"},
 		[]string{stdout, stderr},
 		[]string{"99", "99"},
+		[]string{"100", "101"},
 	}
 	reply, err := MakeRequest(socket, request, 10*time.Second)
 	TestExpectSuccess(t, err)
@@ -73,6 +74,8 @@ func TestUnnamedStartRequest(t *testing.T) {
 
 	// FIXME: Check the UID/GID
 
+	// FIXME: Check the supplemental GIDs
+
 	// SLEEP PROCESS 2
 
 	// Make a request against the initd server.
@@ -87,6 +90,7 @@ func TestUnnamedStartRequest(t *testing.T) {
 		[]string{"KTEST2=VTEST2", "KTEST3=VTEST3"},
 		[]string{stdout, stderr},
 		[]string{"99", "99"},
+		[]string{},
 	}
 	reply, err = MakeRequest(socket, request, 10*time.Second)
 	TestExpectSuccess(t, err)
@@ -144,6 +148,7 @@ func TestNamedStartRequest(t *testing.T) {
 		[]string{"KTEST=VTEST"},
 		[]string{stdout, stderr},
 		[]string{"99", "99"},
+		[]string{},
 	}
 	reply, err := MakeRequest(socket, request, 10*time.Second)
 	TestExpectSuccess(t, err)
@@ -192,6 +197,7 @@ func TestNamedStartRequest(t *testing.T) {
 		[]string{"KTEST2=VTEST2", "KTEST3=VTEST3"},
 		[]string{stdout, stderr},
 		[]string{"99", "99"},
+		[]string{},
 	}
 	reply, err = MakeRequest(socket, request, 10*time.Second)
 	TestExpectSuccess(t, err)
@@ -238,6 +244,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"DIR"},
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{"STDOUT", "STDERR"},
+			[]string{},
 		},
 
 		// Test 2: Request is too long..
@@ -249,6 +256,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"STDOUT", "STDERR"},
 			[]string{"UID", "GID"},
 			[]string{},
+			[]string{},
 		},
 
 		// Test 3: Extra cruft after NAME
@@ -259,6 +267,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{"STDOUT", "STDERR"},
 			[]string{"UID", "GID"},
+			[]string{},
 		},
 
 		// Test 4: Extra cruft after STDERR
@@ -269,6 +278,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{"STDOUT", "STDERR", "EXTRA"},
 			[]string{"UID", "GID"},
+			[]string{},
 		},
 
 		// Test 5: Extra cruft after GID
@@ -279,6 +289,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{"STDOUT", "STDERR"},
 			[]string{"UID", "GID", "EXTRA"},
+			[]string{},
 		},
 
 		// Test 6: Missing COMMAND
@@ -289,6 +300,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{"STDOUT", "STDERR"},
 			[]string{"UID", "GID"},
+			[]string{},
 		},
 
 		// Test 7: Too many args with WORKING DIR
@@ -299,6 +311,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{"STDOUT", "STDERR"},
 			[]string{"UID", "GID"},
+			[]string{},
 		},
 
 		// Test 8: Missing STDERR
@@ -309,6 +322,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{"STDOUT"},
 			[]string{"UID", "GID"},
+			[]string{},
 		},
 
 		// Test 9: Missing STDOUT
@@ -319,6 +333,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{},
 			[]string{"UID", "GID"},
+			[]string{},
 		},
 
 		// Test 10: Missing GID
@@ -329,6 +344,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{"STDOUT", "STDERR"},
 			[]string{"UID"},
+			[]string{},
 		},
 
 		// Test 11: Missing UID
@@ -338,6 +354,7 @@ func TestBadStartRequest(t *testing.T) {
 			[]string{"DIR"},
 			[]string{"ENVKEY=ENVVALUE"},
 			[]string{"STDOUT", "STDERR"},
+			[]string{},
 			[]string{},
 		},
 	}
