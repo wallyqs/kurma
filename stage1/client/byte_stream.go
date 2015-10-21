@@ -29,6 +29,37 @@ func NewByteStreamReader(stream ByteStreamReceiver, chunk *ByteChunk) io.ReadClo
 	return r
 }
 
+func NewEnterRequestBrokerReader(stream Kurma_EnterServer) ByteStreamReceiver {
+	return &enterRequestBrokerReader{stream: stream}
+}
+
+type enterRequestBrokerReader struct {
+	stream Kurma_EnterServer
+}
+
+func (r *enterRequestBrokerReader) Recv() (*ByteChunk, error) {
+	e, err := r.stream.Recv()
+	if err != nil {
+		return nil, err
+	}
+	return &ByteChunk{
+		StreamId: e.StreamId,
+		Bytes:    e.Bytes,
+	}, nil
+}
+
+func NewEnterRequestBrokerWriter(stream Kurma_EnterClient) ByteStreamSender {
+	return &enterRequestBrokerWriter{stream: stream}
+}
+
+type enterRequestBrokerWriter struct {
+	stream Kurma_EnterClient
+}
+
+func (r *enterRequestBrokerWriter) Send(c *ByteChunk) error {
+	return r.stream.Send(&EnterRequest{StreamId: c.StreamId, Bytes: c.Bytes})
+}
+
 // A generic interface that is used to describe the sending end of a stream.
 type ByteStreamSender interface {
 	Send(*ByteChunk) error

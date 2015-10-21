@@ -138,7 +138,7 @@ func (container *Container) ShortName() string {
 // Enter is used to load a console session within the container. It re-enters
 // the container through the stage2 rather than through the initd so that it can
 // easily stream in and out.
-func (c *Container) Enter(stream *os.File) error {
+func (c *Container) Enter(cmdline []string, stream *os.File) error {
 	launcher := &client2.Launcher{
 		Environment: c.environment.Strings(),
 		Taskfiles:   c.cgroup.TasksFiles(),
@@ -147,6 +147,11 @@ func (c *Container) Enter(stream *os.File) error {
 		Stderr:      stream,
 		User:        c.image.App.User,
 		Group:       c.image.App.Group,
+	}
+
+	// If the command was blank, then use /bin/sh
+	if len(cmdline) == 0 {
+		cmdline = []string{"/bin/sh"}
 	}
 
 	// Check for a privileged isolator
@@ -169,7 +174,8 @@ func (c *Container) Enter(stream *os.File) error {
 	launcher.SetNS(tasks[0])
 
 	// launch!
-	p, err := launcher.Run("/bin/bash")
+	c.log.Debugf("Executing command: %v", cmdline)
+	p, err := launcher.Run(cmdline...)
 	if err != nil {
 		return err
 	}

@@ -22,7 +22,7 @@ func parseFlags(cmd *cli.Cmd) {
 }
 
 func cliEnter(cmd *cli.Cmd) error {
-	if len(cmd.Args) == 0 || len(cmd.Args) > 1 {
+	if len(cmd.Args) == 0 {
 		return fmt.Errorf("Invalid command options specified.")
 	}
 	return cmd.Run()
@@ -37,17 +37,25 @@ func enter(cmd *cli.Cmd) error {
 	}
 	defer raw.TcSetAttr(os.Stdin.Fd(), termios)
 
-	// Initialize the call and send the first packet so that it knows what
-	// container we're connecting to.
+	// Initialize the reader/writer
 	stream, err := cmd.Client.Enter(context.Background())
 	if err != nil {
 		return err
 	}
-	w := pb.NewByteStreamWriter(stream, cmd.Args[0])
-	r := pb.NewByteStreamReader(stream, nil)
-	if _, err := w.Write(nil); err != nil {
+
+	// Send the first packet with the stream ID (container ID) and the command we
+	// want to execute.
+	enterRequest := &pb.EnterRequest{
+		StreamId: cmd.Args[0],
+		Command:  cmd.Args[1:],
+		Bytes:    nil,
+	}
+	if err := stream.Send(enterRequest); err != nil {
 		return err
 	}
+
+	w := pb.NewByteStreamWriter(pb.NewEnterRequestBrokerWriter(stream), cmd.Args[0])
+	r := pb.NewByteStreamReader(stream, nil)
 
 	go io.Copy(w, os.Stdin)
 	io.Copy(os.Stdout, r)

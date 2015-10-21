@@ -23,18 +23,18 @@ func (s *rpcServer) Enter(inStream pb.Kurma_EnterServer) error {
 		return err
 	}
 
-	// Create our inbound streams
-	inWriter := pb.NewByteStreamWriter(inStream, chunk.StreamId)
-	inReader := pb.NewByteStreamReader(inStream, nil)
-
-	// Create our outbound streams
-	outWriter := pb.NewByteStreamWriter(outStream, chunk.StreamId)
-	outReader := pb.NewByteStreamReader(outStream, nil)
-
 	// write the first byte to the backend so it is initialized
-	if _, err := outWriter.Write(nil); err != nil {
+	if err := outStream.Send(chunk); err != nil {
 		return err
 	}
+
+	// Create our inbound streams
+	inWriter := pb.NewByteStreamWriter(inStream, chunk.StreamId)
+	inReader := pb.NewByteStreamReader(pb.NewEnterRequestBrokerReader(inStream), nil)
+
+	// Create our outbound streams
+	outWriter := pb.NewByteStreamWriter(pb.NewEnterRequestBrokerWriter(outStream), chunk.StreamId)
+	outReader := pb.NewByteStreamReader(outStream, nil)
 
 	// stream between!
 	go io.Copy(outWriter, inReader)
