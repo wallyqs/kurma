@@ -8,7 +8,7 @@ service Kurma {
 	rpc Destroy (ContainerRequest) returns (None) {}
 	rpc List (None) returns (ListResponse) {}
 	rpc Get (ContainerRequest) returns (Container) {}
-	rpc Enter(stream ByteChunk) returns (stream ByteChunk) {}
+	rpc Enter(stream EnterRequest) returns (stream ByteChunk) {}
 }
 
 // Request/Response specific objects
@@ -34,6 +34,12 @@ message ListResponse {
 message ByteChunk {
 	string stream_id = 1;
 	bytes bytes = 2;
+}
+
+message EnterRequest {
+	string stream_id = 1;
+	repeated string command = 2;
+	bytes bytes = 3;
 }
 
 // More generic objects that are used in multiple locations.

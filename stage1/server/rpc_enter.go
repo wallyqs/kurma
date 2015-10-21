@@ -29,7 +29,7 @@ func (s *rpcServer) Enter(stream pb.Kurma_EnterServer) error {
 
 	// configure the io.Reader/Writer for the transport
 	w := pb.NewByteStreamWriter(stream, chunk.StreamId)
-	r := pb.NewByteStreamReader(stream, nil)
+	r := pb.NewByteStreamReader(pb.NewEnterRequestBrokerReader(stream), nil)
 
 	// create a pty, which we'll use for the process entering the container and
 	// copy the data back up the transport.
@@ -45,7 +45,7 @@ func (s *rpcServer) Enter(stream pb.Kurma_EnterServer) error {
 	go io.Copy(master, r)
 
 	// enter into the container
-	if err := container.Enter(slave); err != nil {
+	if err := container.Enter(chunk.Command, slave); err != nil {
 		return err
 	}
 	s.log.Debugf("Enter request finished")

@@ -14,6 +14,7 @@ It has these top-level messages:
 	ContainerRequest
 	ListResponse
 	ByteChunk
+	EnterRequest
 	Container
 	None
 */
@@ -121,6 +122,16 @@ type ByteChunk struct {
 func (m *ByteChunk) Reset()         { *m = ByteChunk{} }
 func (m *ByteChunk) String() string { return proto.CompactTextString(m) }
 func (*ByteChunk) ProtoMessage()    {}
+
+type EnterRequest struct {
+	StreamId string   `protobuf:"bytes,1,opt,name=stream_id" json:"stream_id,omitempty"`
+	Command  []string `protobuf:"bytes,2,rep,name=command" json:"command,omitempty"`
+	Bytes    []byte   `protobuf:"bytes,3,opt,name=bytes,proto3" json:"bytes,omitempty"`
+}
+
+func (m *EnterRequest) Reset()         { *m = EnterRequest{} }
+func (m *EnterRequest) String() string { return proto.CompactTextString(m) }
+func (*EnterRequest) ProtoMessage()    {}
 
 type Container struct {
 	Uuid     string          `protobuf:"bytes,1,opt,name=uuid" json:"uuid,omitempty"`
@@ -246,7 +257,7 @@ func (c *kurmaClient) Enter(ctx context.Context, opts ...grpc.CallOption) (Kurma
 }
 
 type Kurma_EnterClient interface {
-	Send(*ByteChunk) error
+	Send(*EnterRequest) error
 	Recv() (*ByteChunk, error)
 	grpc.ClientStream
 }
@@ -255,7 +266,7 @@ type kurmaEnterClient struct {
 	grpc.ClientStream
 }
 
-func (x *kurmaEnterClient) Send(m *ByteChunk) error {
+func (x *kurmaEnterClient) Send(m *EnterRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
@@ -362,7 +373,7 @@ func _Kurma_Enter_Handler(srv interface{}, stream grpc.ServerStream) error {
 
 type Kurma_EnterServer interface {
 	Send(*ByteChunk) error
-	Recv() (*ByteChunk, error)
+	Recv() (*EnterRequest, error)
 	grpc.ServerStream
 }
 
@@ -374,8 +385,8 @@ func (x *kurmaEnterServer) Send(m *ByteChunk) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *kurmaEnterServer) Recv() (*ByteChunk, error) {
-	m := new(ByteChunk)
+func (x *kurmaEnterServer) Recv() (*EnterRequest, error) {
+	m := new(EnterRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}

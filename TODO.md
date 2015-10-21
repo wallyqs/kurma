@@ -38,8 +38,7 @@
 - [ ] Multiple apps in a single pod
 - [ ] Configurable configuration datasources
 - [ ] Add whitelist support for where to retrieve an image from
-- [ ] Have enter command look up user shell if none is given and use that for
-  exec
+- [X] Have enter command pass in the command to run
 - [X] Add baseline enforcement of certain kernel namespaces, like mount, ipc,
   and pid.
 - [X] Add support for image retrieval through an http proxy
