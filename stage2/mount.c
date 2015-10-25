@@ -92,12 +92,15 @@ void createroot(char *src, char *dst, bool privileged) {
 
 		// Populate /dev within the container
 		bindnode("/dev/full", "dev/full");
-		bindnode("/dev/fuse", "dev/fuse");
 		bindnode("/dev/null", "dev/null");
 		bindnode("/dev/random", "dev/random");
 		bindnode("/dev/tty", "dev/tty");
 		bindnode("/dev/urandom", "dev/urandom");
 		bindnode("/dev/zero", "dev/zero");
+
+		// Check for the presence of some devices that might not always be there.
+		if(access("/dev/fuse", F_OK) == 0)
+			bindnode("/dev/fuse", "dev/fuse");
 
 		res = symlink("pts/ptmx", "dev/ptmx");
 		res = symlink("/proc/kcore", "dev/core");
@@ -122,8 +125,6 @@ void createroot(char *src, char *dst, bool privileged) {
 
 	// Setup /tmp within the container
 	mkdir("tmp", 0777);
-	if (mount("tmpfs", "tmp", "tmpfs", 0, "mode=0755") < 0)
-		error(1, errno, "Failed to mount /tmp tmpfs in new root filesystem");
 	umask(mask);
 }
 
