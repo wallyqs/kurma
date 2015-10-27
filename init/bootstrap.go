@@ -516,7 +516,7 @@ func (r *runner) startInitContainers() error {
 				return
 			}
 
-			if _, err := r.manager.Create("", manifest, f); err != nil {
+			if _, err := r.manager.Create("", "", manifest, f); err != nil {
 				r.log.Warnf("Failed to launch container %s: %v", manifest.Name.String(), err)
 				return
 			}
@@ -551,7 +551,7 @@ func (r *runner) startUdev() error {
 		return nil
 	}
 
-	container, err := r.manager.Create("udev", manifest, f)
+	container, err := r.manager.Create("", "udev", manifest, f)
 	if err != nil {
 		r.log.Warnf("Failed to launch udev: %v", err)
 		return nil
@@ -599,7 +599,7 @@ func (r *runner) startNTP() error {
 	manifest.App.Environment.Set(
 		"NTP_SERVERS", strings.Join(r.config.Services.NTP.Servers, " "))
 
-	if _, err := r.manager.Create("ntp", manifest, f); err != nil {
+	if _, err := r.manager.Create("", "ntp", manifest, f); err != nil {
 		r.log.Warnf("Failed to start NTP: %v", err)
 		return nil
 	}
@@ -640,7 +640,7 @@ func (r *runner) startConsole() error {
 	manifest.App.Environment.Set(
 		"CONSOLE_KEYS", strings.Join(r.config.Services.Console.SSHKeys, "\n"))
 
-	if _, err := r.manager.Create("console", manifest, f); err != nil {
+	if _, err := r.manager.Create("", "console", manifest, f); err != nil {
 		return fmt.Errorf("Failed to start console: %v", err)
 	}
 	r.log.Debug("Started console")

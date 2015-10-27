@@ -111,11 +111,15 @@ func (manager *Manager) Validate(imageManifest *schema.ImageManifest) error {
 // Create begins launching a container with the provided image manifest and
 // reader as the source of the ACI.
 func (manager *Manager) Create(
-	name string, imageManifest *schema.ImageManifest, image io.ReadCloser,
+	id, name string, imageManifest *schema.ImageManifest, image io.ReadCloser,
 ) (*Container, error) {
 	// revalidate the image
 	if err := manager.Validate(imageManifest); err != nil {
 		return nil, err
+	}
+
+	if id == "" {
+		id = uuid.Variant4().String()
 	}
 
 	// handle a blank name
@@ -131,7 +135,7 @@ func (manager *Manager) Create(
 	container := &Container{
 		manager:          manager,
 		log:              manager.Log.Clone(),
-		uuid:             uuid.Variant4().String(),
+		uuid:             id,
 		waitch:           make(chan bool),
 		initialImageFile: image,
 		image:            imageManifest,

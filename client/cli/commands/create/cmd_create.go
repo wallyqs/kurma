@@ -69,7 +69,7 @@ func create(cmd *cli.Cmd) error {
 		return err
 	}
 
-	// fmt.Printf("Launched container %s\n", resp.Uuid)
+	fmt.Printf("Launched container %s\n", resp.Container.Uuid)
 	return nil
 }
 

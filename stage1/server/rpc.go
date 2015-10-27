@@ -24,6 +24,7 @@ type rpcServer struct {
 type pendingContainer struct {
 	name          string
 	imageManifest *schema.ImageManifest
+	containerUuid string
 }
 
 func (s *rpcServer) Create(ctx context.Context, in *pb.CreateRequest) (*pb.CreateResponse, error) {
@@ -44,8 +45,13 @@ func (s *rpcServer) Create(ctx context.Context, in *pb.CreateRequest) (*pb.Creat
 	pc := &pendingContainer{
 		name:          in.Name,
 		imageManifest: imageManifest,
+		containerUuid: uuid.Variant4().String(),
 	}
 	resp := &pb.CreateResponse{
+		Container: &pb.Container{
+			Uuid:     pc.containerUuid,
+			Manifest: in.Manifest,
+		},
 		ImageUploadId: uuid.Variant4().String(),
 	}
 	s.pendingUploads[resp.ImageUploadId] = pc
@@ -66,7 +72,7 @@ func (s *rpcServer) UploadImage(stream pb.Kurma_UploadImageServer) error {
 
 	r := pb.NewByteStreamReader(stream, packet)
 	s.log.Debug("Initializing container")
-	_, err = s.manager.Create(pc.name, pc.imageManifest, r)
+	_, err = s.manager.Create(pc.containerUuid, pc.name, pc.imageManifest, r)
 	return err
 }
 
