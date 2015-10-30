@@ -407,6 +407,9 @@ func (r *runner) createDirectories() error {
 	if err := os.MkdirAll(volumesPath, os.FileMode(0755)); err != nil {
 		return fmt.Errorf("failed to create volumes directory: %v", err)
 	}
+	if err := os.MkdirAll(systemContainersPath, os.FileMode(0755)); err != nil {
+		return fmt.Errorf("failed to create system containers directory: %v", err)
+	}
 	return nil
 }
 
@@ -458,7 +461,7 @@ func (r *runner) launchManager() error {
 	r.manager = m
 	r.log.Trace("Container Manager has been initialized.")
 
-	os.Chdir("/var/kurma")
+	os.Chdir(kurmaPath)
 	return nil
 }
 
@@ -551,20 +554,17 @@ func (r *runner) startUdev() error {
 		return nil
 	}
 
-	container, err := r.manager.Create("", "udev", manifest, f)
-	if err != nil {
-		r.log.Warnf("Failed to launch udev: %v", err)
-		return nil
-	}
-	r.log.Debug("Started udev")
-
-	container.Wait()
-	r.log.Trace("Udev is finished")
-	if err := container.Stop(); err != nil {
-		r.log.Errorf("Failed to stop udev cleanly: %v", err)
-		return nil
-	}
-
+	// FIXME make this configurable on the container somehow
+	r.manager.SwapDirectory(systemContainersPath, func() {
+		container, err := r.manager.Create("", "udev", manifest, f)
+		if err != nil {
+			r.log.Warnf("Failed to launch udev: %v", err)
+			return
+		} else {
+			r.log.Debug("Started udev")
+			container.Wait()
+		}
+	})
 	return nil
 }
 

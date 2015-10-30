@@ -50,8 +50,9 @@ const (
 	kurmaPathPods    = kurmaPathUsage("pods")
 	kurmaPathVolumes = kurmaPathUsage("volumes")
 
-	kurmaPath = "/var/kurma"
-	mountPath = "/mnt"
+	kurmaPath            = "/var/kurma"
+	mountPath            = "/mnt"
+	systemContainersPath = "/var/kurma/system"
 )
 
 type kurmaServices struct {

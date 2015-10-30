@@ -196,6 +196,16 @@ func (manager *Manager) Container(uuid string) *Container {
 	return manager.containers[uuid]
 }
 
+// SwapDirectory can be used to temporarily use a different container path for
+// an operation. This is a temporary hack util a Container object can specify
+// its own path.
+func (manager *Manager) SwapDirectory(containerDirectory string, f func()) {
+	dir := manager.containerDirectory
+	manager.containerDirectory = containerDirectory
+	defer func() { manager.containerDirectory = dir }()
+	f()
+}
+
 // getVolumePath will get the absolute path on the host to the named volume. It
 // will also ensure that the volume name exists within the volumes directory.
 func (manager *Manager) getVolumePath(name string) (string, error) {
