@@ -210,16 +210,21 @@ func reportPanic() error {
 }
 
 func determineKurmaHostPort() string {
+	kurmaHost := cli.KurmaHost
+	if kurmaHost == "" {
+		kurmaHost = os.Getenv(cli.EnvKurmaHost)
+	}
+
 	// See if KurmaHost is a socket file
-	if fi, _ := os.Stat(cli.KurmaHost); fi != nil {
-		u := url.URL{Scheme: "unix", Path: cli.KurmaHost}
+	if fi, _ := os.Stat(kurmaHost); fi != nil {
+		u := url.URL{Scheme: "unix", Path: kurmaHost}
 		return u.String()
 	}
 
 	// quick check if it is referring to the local host
-	ip := net.ParseIP(cli.KurmaHost)
+	ip := net.ParseIP(kurmaHost)
 	if ip != nil {
-		u := url.URL{Scheme: "tcp", Host: net.JoinHostPort(cli.KurmaHost, defaultKurmaRemotePort)}
+		u := url.URL{Scheme: "tcp", Host: net.JoinHostPort(kurmaHost, defaultKurmaRemotePort)}
 		return u.String()
 	}
 

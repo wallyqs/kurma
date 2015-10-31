@@ -15,6 +15,7 @@ const (
 	defaultConfirmation = "Is this correct?"
 	askYes              = "Y/n"
 	askNo               = "y/N"
+	EnvKurmaHost        = "KURMA_HOST"
 )
 
 var (
