@@ -72,8 +72,12 @@ func main() {
 
 	// boot the new kernel image
 	if err := bootNewKernel(img, newbootdev); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "kexec failed: %s\n", err.Error())
+		fmt.Fprintf(os.Stderr, "Attempting full reboot...\n")
+		if err := fullReboot(); err != nil {
+			fmt.Fprintf(os.Stderr, "reboot failed: %s\n", err.Error())
+			os.Exit(1)
+		}
 	}
 }
 
@@ -265,4 +269,14 @@ func generateNewCmdline(cmdline string, img bootPart, bootedDev string) string {
 	}
 
 	return strings.Join(parts, " ")
+}
+
+func fullReboot() error {
+	f, err := os.OpenFile("/host/proc/sysrq-trigger", os.O_WRONLY, os.FileMode(0644))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.Write([]byte{'b'})
+	return err
 }
