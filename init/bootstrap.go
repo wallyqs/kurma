@@ -4,6 +4,7 @@ package init
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/apcera/kurma/stage1/container"
@@ -22,9 +24,67 @@ import (
 	"github.com/apcera/logray"
 	"github.com/apcera/util/aciremote"
 	"github.com/apcera/util/proc"
+	"github.com/apcera/util/tarhelper"
 	"github.com/appc/spec/discovery"
 	"github.com/vishvananda/netlink"
 )
+
+// switchRoot handles copying all of the files off the initial initramfs root
+// and onto a tmpfs mount, then moving the root to it.
+func (r *runner) switchRoot() error {
+	// create the newroot on a tmpfs
+	if err := os.Mkdir(newRoot, os.FileMode(0755)); err != nil {
+		return err
+	}
+	if err := syscall.Mount("none", newRoot, "tmpfs", 0, ""); err != nil {
+		return err
+	}
+
+	// Stream the root over to the new location with tarhelper. This is simpler
+	// than walking the directories, copying files, checking for symlinks, etc.
+	pr, pw := io.Pipe()
+	tar := tarhelper.NewTar(pw, "/")
+	tar.IncludeOwners = true
+	tar.IncludePermissions = true
+	// ExcludePaths is stupid, leave off the leading slash.
+	tar.ExcludePath(newRoot[1:] + ".*")
+	tar.Compression = tarhelper.NONE
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	var archiveErr error
+	go func() {
+		defer wg.Done()
+		archiveErr = tar.Archive()
+	}()
+	untar := tarhelper.NewUntar(pr, newRoot)
+	untar.AbsoluteRoot = newRoot
+	untar.PreserveOwners = true
+	untar.PreservePermissions = true
+	if err := untar.Extract(); err != nil {
+		return err
+	}
+
+	// ensure we check that the archive call did not error out
+	wg.Wait()
+	if archiveErr != nil {
+		return archiveErr
+	}
+
+	// move the root to newroot
+	if err := syscall.Chdir(newRoot); err != nil {
+		return err
+	}
+	if err := syscall.Mount(newRoot, "/", "", syscall.MS_MOVE, ""); err != nil {
+		return err
+	}
+	if err := syscall.Chroot("."); err != nil {
+		return err
+	}
+	if err := syscall.Chdir("/"); err != nil {
+		return err
+	}
+	return nil
+}
 
 // loadConfigurationFile loads the configuration for the process. It will take
 // the default coded configuration, merge it with the base configuration file

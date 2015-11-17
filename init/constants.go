@@ -8,6 +8,7 @@ var (
 	// primarily on runtime actions that must be done each time on boot.
 	setupFunctions = []func(*runner) error{
 		(*runner).startSignalHandling,
+		(*runner).switchRoot,
 		(*runner).createSystemMounts,
 		(*runner).loadConfigurationFile,
 		(*runner).configureLogging,
@@ -39,6 +40,11 @@ const (
 	// The default location where cgroups should be mounted. This is a constant
 	// because it is referenced in multiple functions.
 	cgroupsMount = "/sys/fs/cgroup"
+
+	// This is the directory that is used when performing the switch_root, and
+	// relocating off of the initramfs. Note, this is expected to include the
+	// leading slash.
+	newRoot = "/newroot"
 )
 
 // defaultConfiguration returns the default codified configuration that is
