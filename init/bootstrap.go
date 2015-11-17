@@ -40,6 +40,13 @@ func (r *runner) loadConfigurationFile() error {
 		r.config.mergeConfig(diskConfig)
 	}
 
+	// second, load from the boot cmdline
+	if bootConfig := getConfigFromCmdline(); bootConfig != nil {
+		r.config.mergeConfig(bootConfig)
+	}
+
+	// FIXME likely need to move OEMConfig to after loading modules and udev
+
 	// if an OEM config is specified, attempt to find it
 	if r.config.OEMConfig != nil {
 		device := util.ResolveDevice(r.config.OEMConfig.Device)
@@ -472,6 +479,39 @@ func (r *runner) startSignalHandling() error {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGCHLD)
 	go r.handleSIGCHLD(ch)
+	return nil
+}
+
+// markBootSuccessful sets the GPT flags for a successful boot on the partition
+// associated with the kernel
+func (r *runner) markBootSuccessful() error {
+	if r.config.SuccessfulBoot == nil {
+		return nil
+	}
+
+	device := util.ResolveDevice(*r.config.SuccessfulBoot)
+	if device == "" {
+		r.log.Warnf("Failed to resolve boot device of %q", *r.config.SuccessfulBoot)
+		return nil
+	}
+
+	rawdev := util.GetRawDevice(device)
+	partnum := util.GetPartitionNumber(device)
+	if rawdev == "" || partnum == "" {
+		r.log.Warnf("Failed to resolve device/partition: %q / %q", rawdev, partnum)
+		return nil
+	}
+
+	out, err := exec.Command("/bin/cgpt", "add", rawdev, "-i", partnum, "-S1", "-T0").CombinedOutput()
+	if err != nil {
+		r.log.Warnf("Failed to mark boot successful: %s", string(out))
+		return err
+	}
+	out, err = exec.Command("/bin/cgpt", "prioritize", rawdev, "-i", partnum).CombinedOutput()
+	if err != nil {
+		r.log.Warnf("Failed to prioritize boot device: %s", string(out))
+		return err
+	}
 	return nil
 }
 

@@ -4,6 +4,7 @@ package init
 
 type kurmaConfig struct {
 	Debug              bool                      `json:"debug,omitempty"`
+	SuccessfulBoot     *string                   `json:"-"`
 	OEMConfig          *OEMConfig                `json:"oem_config"`
 	Datasources        []string                  `json:"datasources,omitempty"`
 	Hostname           string                    `json:"hostname,omitempty"`
@@ -83,6 +84,10 @@ type kurmaConsoleService struct {
 func (cfg *kurmaConfig) mergeConfig(o *kurmaConfig) {
 	if o == nil {
 		return
+	}
+
+	if o.SuccessfulBoot != nil {
+		cfg.SuccessfulBoot = o.SuccessfulBoot
 	}
 
 	// FIXME datasources
