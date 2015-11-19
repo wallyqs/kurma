@@ -140,8 +140,9 @@ func (manager *Manager) Create(
 		initialImageFile: image,
 		image:            imageManifest,
 		pod: &schema.PodManifest{
-			ACKind:    schema.PodManifestKind,
-			ACVersion: schema.AppContainerVersion,
+			ACKind:      schema.PodManifestKind,
+			ACVersion:   schema.AppContainerVersion,
+			Annotations: imageManifest.Annotations,
 			Apps: schema.AppList([]schema.RuntimeApp{
 				schema.RuntimeApp{
 					Name: types.ACName(name),
