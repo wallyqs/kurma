@@ -127,13 +127,13 @@ func (r *runner) loadConfigurationFile() error {
 
 		// attempt to load the configuration
 		configPath := filepath.Join(diskPath, r.config.OEMConfig.ConfigPath)
-		r.log.Infof("Loading OEM config: %q", configPath)
 		diskConfig, err := getConfigurationFromFile(configPath)
 		if err != nil {
 			r.log.Errorf("Failed to load oem config: %v", err)
 			return nil
 		}
 		if diskConfig != nil {
+			r.log.Infof("Loading OEM config: %q", configPath)
 			r.config.mergeConfig(diskConfig)
 		}
 	}
