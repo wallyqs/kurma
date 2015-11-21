@@ -9,6 +9,8 @@
 #include <unistd.h>
 
 void writesysreq(char c) {
+	sync();
+
 	int fd = open("/host/proc/sysrq-trigger", O_WRONLY);
 	if (fd == -1) {
     perror("open");
