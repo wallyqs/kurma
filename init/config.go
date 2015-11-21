@@ -38,11 +38,12 @@ type kurmaNetworkInterface struct {
 }
 
 type kurmaDiskConfiguration struct {
-	Device string           `json:"device"`
-	FsType string           `json:"fstype,omitempty"`
-	Format *bool            `json:"format,omitempty"`
-	Usage  []kurmaPathUsage `json:"usage"`
-	Resize bool             `json:"resize"`
+	Device  string           `json:"device"`
+	FsType  string           `json:"fstype,omitempty"`
+	Options string           `json:"options,omitempty"`
+	Format  *bool            `json:"format,omitempty"`
+	Usage   []kurmaPathUsage `json:"usage"`
+	Resize  bool             `json:"resize"`
 }
 
 type kurmaPathUsage string

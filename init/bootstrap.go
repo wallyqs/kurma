@@ -21,8 +21,8 @@ import (
 	"github.com/apcera/kurma/stage1/container"
 	"github.com/apcera/kurma/stage1/server"
 	"github.com/apcera/kurma/util"
-	"github.com/apcera/logray"
 	"github.com/apcera/kurma/util/aciremote"
+	"github.com/apcera/logray"
 	"github.com/apcera/util/proc"
 	"github.com/apcera/util/tarhelper"
 	"github.com/appc/spec/discovery"
@@ -322,7 +322,7 @@ func (r *runner) mountDisks() error {
 
 		// mount it
 		diskPath := filepath.Join(mountPath, strings.Replace(device, "/", "_", -1))
-		if err := handleMount(device, diskPath, fstype, 0, ""); err != nil {
+		if err := handleMount(device, diskPath, fstype, 0, disk.Options); err != nil {
 			r.log.Errorf("failed to mount disk %q: %v", device, err)
 			continue
 		}
@@ -668,7 +668,7 @@ func (r *runner) startUdev() error {
 	return nil
 }
 
-// startConsole handles launching the udev service.
+// startNTP handles launching the udev service.
 func (r *runner) startNTP() error {
 	if r.config.Services.NTP.Enabled == nil || !*r.config.Services.NTP.Enabled {
 		r.log.Trace("Skipping NTP")
@@ -686,12 +686,12 @@ func (r *runner) startNTP() error {
 
 	manifest, err := findManifest(f)
 	if err != nil {
-		r.log.Errorf("Failed to find manifest in console image: %v", err)
+		r.log.Errorf("Failed to find manifest in NTP image: %v", err)
 		return nil
 	}
 
 	if _, err := f.Seek(0, 0); err != nil {
-		r.log.Errorf("Failed to set up console image: %v", err)
+		r.log.Errorf("Failed to set up NTP image: %v", err)
 		return nil
 	}
 
