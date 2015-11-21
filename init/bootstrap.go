@@ -22,7 +22,7 @@ import (
 	"github.com/apcera/kurma/stage1/server"
 	"github.com/apcera/kurma/util"
 	"github.com/apcera/logray"
-	"github.com/apcera/util/aciremote"
+	"github.com/apcera/kurma/util/aciremote"
 	"github.com/apcera/util/proc"
 	"github.com/apcera/util/tarhelper"
 	"github.com/appc/spec/discovery"

@@ -14,10 +14,6 @@
 			"Rev": "683d3fb424194f29991b0442b37521de9bc9d66b"
 		},
 		{
-			"ImportPath": "github.com/apcera/util/aciremote",
-			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
-		},
-		{
 			"ImportPath": "github.com/apcera/util/envmap",
 			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
 		},
