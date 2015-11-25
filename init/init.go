@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/apcera/kurma/stage1/container"
+	"github.com/apcera/kurma/stage1/image"
 	"github.com/apcera/logray"
 )
 
@@ -13,9 +14,10 @@ import (
 // system. It will take of the running of the process once init.Run() is
 // invoked.
 type runner struct {
-	config  *kurmaConfig
-	log     *logray.Logger
-	manager *container.Manager
+	config       *kurmaConfig
+	log          *logray.Logger
+	manager      *container.Manager
+	imageManager *image.Manager
 }
 
 // Run takes over the process and launches KurmaOS.

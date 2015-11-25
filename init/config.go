@@ -49,6 +49,7 @@ type kurmaDiskConfiguration struct {
 type kurmaPathUsage string
 
 const (
+	kurmaPathImages  = kurmaPathUsage("images")
 	kurmaPathPods    = kurmaPathUsage("pods")
 	kurmaPathVolumes = kurmaPathUsage("volumes")
 

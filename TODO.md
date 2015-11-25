@@ -46,6 +46,5 @@
 
 ### Exploritory
 
-- [ ] Investigate authentication with gRPC
 - [X] Change management of containers to be separated by process, so the daemon
   doesn't need a direct handle on the container.

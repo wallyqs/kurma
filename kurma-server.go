@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"os"
+	"runtime"
 
 	"github.com/apcera/kurma/stage1/server"
 	"github.com/apcera/logray"
@@ -34,6 +35,7 @@ func main() {
 
 	s := server.New(opts)
 	if err := s.Start(); err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Failure running process: %v", err)
 	}
+	runtime.Goexit()
 }

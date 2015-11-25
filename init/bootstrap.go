@@ -19,6 +19,8 @@ import (
 	"syscall"
 
 	"github.com/apcera/kurma/stage1/container"
+	"github.com/apcera/kurma/stage1/graphstorage/overlay"
+	"github.com/apcera/kurma/stage1/image"
 	"github.com/apcera/kurma/stage1/server"
 	"github.com/apcera/kurma/util"
 	"github.com/apcera/kurma/util/aciremote"
@@ -345,6 +347,16 @@ func (r *runner) mountDisks() error {
 			}
 		}
 	}
+
+	return nil
+}
+
+// rescanForImages will recheck for any images now that the disks have been
+// mounted.
+func (r *runner) rescanImages() error {
+	if err := r.imageManager.Rescan(); err != nil {
+		return fmt.Errorf("Failed to scan for existing container images: %v", err)
+	}
 	return nil
 }
 
@@ -465,9 +477,13 @@ func (r *runner) configureNetwork() error {
 // createDirectories ensures the specified storage paths for pods and volumes
 // exist.
 func (r *runner) createDirectories() error {
+	imagesPath := filepath.Join(kurmaPath, string(kurmaPathImages))
 	podsPath := filepath.Join(kurmaPath, string(kurmaPathPods))
 	volumesPath := filepath.Join(kurmaPath, string(kurmaPathVolumes))
 
+	if err := os.MkdirAll(imagesPath, os.FileMode(0755)); err != nil {
+		return fmt.Errorf("failed to create images directory: %v", err)
+	}
 	if err := os.MkdirAll(podsPath, os.FileMode(0755)); err != nil {
 		return fmt.Errorf("failed to create pods directory: %v", err)
 	}
@@ -514,13 +530,27 @@ func (r *runner) displayNetwork() error {
 // launchManager creates the container manager to allow containers to be
 // launched.
 func (r *runner) launchManager() error {
+	storage, err := overlay.New()
+	if err != nil {
+		return err
+	}
+	iopts := &image.Options{
+		Directory: filepath.Join(kurmaPath, string(kurmaPathImages)),
+	}
+	imageManager, err := image.New(storage, iopts)
+	if err != nil {
+		return fmt.Errorf("failed to create the image manager: %v", err)
+	}
+	imageManager.Log = r.log.Clone()
+	r.imageManager = imageManager
+
 	mopts := &container.Options{
-		ParentCgroupName:   r.config.ParentCgroupName,
 		ContainerDirectory: filepath.Join(kurmaPath, string(kurmaPathPods)),
 		VolumeDirectory:    filepath.Join(kurmaPath, string(kurmaPathVolumes)),
 		RequiredNamespaces: r.config.RequiredNamespaces,
+		ParentCgroupName:   r.config.ParentCgroupName,
 	}
-	m, err := container.NewManager(mopts)
+	m, err := container.NewManager(imageManager, mopts)
 	if err != nil {
 		return fmt.Errorf("failed to create the container manager: %v", err)
 	}
@@ -581,6 +611,7 @@ func (r *runner) startServer() error {
 	group := 200
 
 	opts := &server.Options{
+		ImageManager:      r.imageManager,
 		ContainerManager:  r.manager,
 		SocketFile:        filepath.Join(kurmaPath, "socket"),
 		SocketPermissions: &perms,
@@ -588,11 +619,10 @@ func (r *runner) startServer() error {
 	}
 
 	s := server.New(opts)
-	go func() {
-		if err := s.Start(); err != nil {
-			r.log.Errorf("Error with Kurma server: %v", err)
-		}
-	}()
+	if err := s.Start(); err != nil {
+		r.log.Errorf("Error with Kurma server: %v", err)
+		return err
+	}
 	return nil
 }
 
@@ -606,20 +636,16 @@ func (r *runner) startInitContainers() error {
 				r.log.Errorf("Failed to retrieve image %q: %v", img, err)
 				return
 			}
+			defer removeIfFile(img)
 			defer f.Close()
 
-			manifest, err := findManifest(f)
+			hash, manifest, err := r.imageManager.CreateImage(f)
 			if err != nil {
-				r.log.Errorf("Failed to find manifest in image %q: %v", img, err)
+				r.log.Warnf("Failed to load image %s: %v", manifest.Name.String(), err)
 				return
 			}
 
-			if _, err := f.Seek(0, 0); err != nil {
-				r.log.Errorf("Failed to set up %q: %v", img, err)
-				return
-			}
-
-			if _, err := r.manager.Create("", "", manifest, f); err != nil {
+			if _, err := r.manager.Create("", "", manifest, hash); err != nil {
 				r.log.Warnf("Failed to launch container %s: %v", manifest.Name.String(), err)
 				return
 			}
@@ -641,22 +667,18 @@ func (r *runner) startUdev() error {
 		r.log.Errorf("Failed to retrieve udev image: %v", err)
 		return nil
 	}
+	defer removeIfFile(r.config.Services.Udev.ACI)
 	defer f.Close()
-
-	manifest, err := findManifest(f)
-	if err != nil {
-		r.log.Errorf("Failed to find manifest in udev image: %v", err)
-		return nil
-	}
-
-	if _, err := f.Seek(0, 0); err != nil {
-		r.log.Errorf("Failed to set up udev image: %v", err)
-		return nil
-	}
 
 	// FIXME make this configurable on the container somehow
 	r.manager.SwapDirectory(systemContainersPath, func() {
-		container, err := r.manager.Create("", "udev", manifest, f)
+		hash, manifest, err := r.imageManager.CreateImage(f)
+		if err != nil {
+			r.log.Warnf("Failed to load image %s: %v", manifest.Name.String(), err)
+			return
+		}
+
+		container, err := r.manager.Create("", "udev", manifest, hash)
 		if err != nil {
 			r.log.Warnf("Failed to launch udev: %v", err)
 			return
@@ -682,16 +704,12 @@ func (r *runner) startNTP() error {
 		r.log.Errorf("Failed to retrieve NTP image: %v", err)
 		return nil
 	}
+	defer removeIfFile(r.config.Services.NTP.ACI)
 	defer f.Close()
 
-	manifest, err := findManifest(f)
+	hash, manifest, err := r.imageManager.CreateImage(f)
 	if err != nil {
-		r.log.Errorf("Failed to find manifest in NTP image: %v", err)
-		return nil
-	}
-
-	if _, err := f.Seek(0, 0); err != nil {
-		r.log.Errorf("Failed to set up NTP image: %v", err)
+		r.log.Warnf("Failed to load image %s: %v", manifest.Name.String(), err)
 		return nil
 	}
 
@@ -699,7 +717,7 @@ func (r *runner) startNTP() error {
 	manifest.App.Environment.Set(
 		"NTP_SERVERS", strings.Join(r.config.Services.NTP.Servers, " "))
 
-	if _, err := r.manager.Create("", "ntp", manifest, f); err != nil {
+	if _, err := r.manager.Create("", "ntp", manifest, hash); err != nil {
 		r.log.Warnf("Failed to start NTP: %v", err)
 		return nil
 	}
@@ -719,16 +737,12 @@ func (r *runner) startConsole() error {
 		r.log.Errorf("Failed to retrieve console image: %v", err)
 		return nil
 	}
+	defer removeIfFile(r.config.Services.Console.ACI)
 	defer f.Close()
 
-	manifest, err := findManifest(f)
+	hash, manifest, err := r.imageManager.CreateImage(f)
 	if err != nil {
-		r.log.Errorf("Failed to find manifest in console image: %v", err)
-		return nil
-	}
-
-	if _, err := f.Seek(0, 0); err != nil {
-		r.log.Errorf("Failed to set up console image: %v", err)
+		r.log.Warnf("Failed to load image %s: %v", manifest.Name.String(), err)
 		return nil
 	}
 
@@ -740,7 +754,7 @@ func (r *runner) startConsole() error {
 	manifest.App.Environment.Set(
 		"CONSOLE_KEYS", strings.Join(r.config.Services.Console.SSHKeys, "\n"))
 
-	if _, err := r.manager.Create("", "console", manifest, f); err != nil {
+	if _, err := r.manager.Create("", "console", manifest, hash); err != nil {
 		return fmt.Errorf("Failed to start console: %v", err)
 	}
 	r.log.Debug("Started console")

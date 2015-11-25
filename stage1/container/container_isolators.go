@@ -21,7 +21,6 @@ func (c *Container) setupLinuxNamespaceIsolator(launcher *client.Launcher) error
 	if iso := c.image.App.Isolators.GetByName(kschema.LinuxNamespacesName); iso != nil {
 		if niso, ok := iso.Value().(*kschema.LinuxNamespaces); ok {
 			launcher.NewIPCNamespace = niso.IPC()
-			launcher.NewMountNamespace = niso.Mount()
 			launcher.NewNetworkNamespace = niso.Net()
 			launcher.NewPIDNamespace = niso.PID()
 			launcher.NewUserNamespace = niso.User()
@@ -32,7 +31,6 @@ func (c *Container) setupLinuxNamespaceIsolator(launcher *client.Launcher) error
 	if !nsisolators {
 		// set some defaults if no namespace isolator was given
 		launcher.NewIPCNamespace = true
-		launcher.NewMountNamespace = true
 		launcher.NewPIDNamespace = true
 		launcher.NewUTSNamespace = true
 	}
@@ -58,14 +56,14 @@ func (c *Container) setupHostPrivilegeIsolator(launcher *client.Launcher) error 
 					return err
 				}
 
-				podsMount := strings.Replace(podsDest, c.stage3Path(), client.DefaultChrootPath, 1)
-				procMount := strings.Replace(procDest, c.stage3Path(), client.DefaultChrootPath, 1)
+				podsMount := strings.Replace(podsDest, c.storage.HostRoot(), client.DefaultChrootPath, 1)
+				procMount := strings.Replace(procDest, c.storage.HostRoot(), client.DefaultChrootPath, 1)
 
 				// create the mount point definitions for host access
 				launcher.MountPoints = []*client.MountPoint{
 					// Add the pods mount
 					&client.MountPoint{
-						Source:      c.manager.containerDirectory,
+						Source:      c.manager.Options.ContainerDirectory,
 						Destination: podsMount,
 						Flags:       syscall.MS_BIND,
 					},
@@ -96,15 +94,15 @@ func (c *Container) setupHostPrivilegeIsolator(launcher *client.Launcher) error 
 				}
 
 				// If a volume directory is defined, then map it in as well.
-				if c.manager.volumeDirectory != "" {
+				if c.manager.Options.VolumeDirectory != "" {
 					volumesDest, err := c.ensureContainerPathExists("host/volumes")
 					if err != nil {
 						return err
 					}
-					volumesMount := strings.Replace(volumesDest, c.stage3Path(), client.DefaultChrootPath, 1)
+					volumesMount := strings.Replace(volumesDest, c.storage.HostRoot(), client.DefaultChrootPath, 1)
 					launcher.MountPoints = append(launcher.MountPoints,
 						&client.MountPoint{
-							Source:      c.manager.volumeDirectory,
+							Source:      c.manager.Options.VolumeDirectory,
 							Destination: volumesMount,
 							Flags:       syscall.MS_BIND,
 						})
@@ -146,7 +144,7 @@ func (c *Container) setupHostApiAccessIsolator(launcher *client.Launcher) error 
 					int(fi.Sys().(*syscall.Stat_t).Gid))
 
 				// find the container relative path, pre-chroot, and setup the mount
-				m := strings.Replace(dest, c.stage3Path(), client.DefaultChrootPath, 1)
+				m := strings.Replace(dest, c.storage.HostRoot(), client.DefaultChrootPath, 1)
 				launcher.Debug = true
 				launcher.MountPoints = append(launcher.MountPoints,
 					&client.MountPoint{

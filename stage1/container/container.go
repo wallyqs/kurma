@@ -4,11 +4,11 @@ package container
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"sync"
 
 	kschema "github.com/apcera/kurma/schema"
+	"github.com/apcera/kurma/stage1/graphstorage"
 	client2 "github.com/apcera/kurma/stage2/client"
 	client3 "github.com/apcera/kurma/stage3/client"
 	"github.com/apcera/kurma/util/cgroups"
@@ -30,17 +30,37 @@ const (
 	EXITED
 )
 
+func (c ContainerState) String() string {
+	switch c {
+	case NEW:
+		return "NEW"
+	case STARTING:
+		return "STARTING"
+	case RUNNING:
+		return "RUNNING"
+	case STOPPING:
+		return "STOPPING"
+	case STOPPED:
+		return "STOPPED"
+	case EXITED:
+		return "EXITED"
+	default:
+		return ""
+	}
+}
+
 // Container represents the operation and management of an individual container
 // on the current system.
 type Container struct {
 	manager *Manager
 	log     *logray.Logger
 
-	image            *schema.ImageManifest
-	pod              *schema.PodManifest
-	uuid             string
-	initialImageFile io.ReadCloser
+	image     *schema.ImageManifest
+	imageHash string
+	pod       *schema.PodManifest
+	uuid      string
 
+	storage     graphstorage.PodStorage
 	cgroup      *cgroups.Cgroup
 	directory   string
 	environment *envmap.EnvMap
@@ -52,10 +72,16 @@ type Container struct {
 	waitch       chan bool
 }
 
-// Manifest returns the current pod manifest for the App Container
+// PodManifest returns the current pod manifest for the App Container
 // Specification.
-func (container *Container) Manifest() *schema.PodManifest {
+func (container *Container) PodManifest() *schema.PodManifest {
 	return container.pod
+}
+
+// ImageManifest returns the current image manifest for the App Container
+// Specification.
+func (container *Container) ImageManifest() *schema.ImageManifest {
+	return container.image
 }
 
 // State returns the current operating state of the container.

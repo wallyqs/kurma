@@ -13,8 +13,6 @@ import (
 
 	"github.com/apcera/kurma/stage3/client"
 	"github.com/apcera/util/envmap"
-	"github.com/apcera/util/hashutil"
-	"github.com/apcera/util/tarhelper"
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
 )
@@ -30,6 +28,7 @@ var (
 		(*Container).startingCgroups,
 		(*Container).launchStage2,
 		(*Container).startApp,
+		(*Container).markStorageRunning,
 	}
 
 	// These are the functions that will be called in order to handle container
@@ -47,7 +46,7 @@ func (c *Container) startingBaseDirectories() error {
 	c.log.Debug("Setting up directories.")
 
 	// This is the top level directory that we will create for this container.
-	c.directory = filepath.Join(c.manager.containerDirectory, c.ShortName())
+	c.directory = filepath.Join(c.manager.Options.ContainerDirectory, c.ShortName())
 
 	// Make the directories.
 	mode := os.FileMode(0755)
@@ -71,38 +70,11 @@ func (c *Container) startingBaseDirectories() error {
 func (c *Container) startingFilesystem() error {
 	c.log.Debug("Setting up stage2 filesystem")
 
-	if c.initialImageFile == nil {
-		c.log.Error("Initial image filesystem is nil")
-		return fmt.Errorf("initial image filesystem is nil")
+	storage, err := c.manager.imageManager.ProvisionPod(c.imageHash, c.directory)
+	if err != nil {
+		return err
 	}
-
-	defer func() {
-		c.initialImageFile.Close()
-		c.initialImageFile = nil
-	}()
-
-	// handle reading the sha
-	sr := hashutil.NewSha512(c.initialImageFile)
-
-	// untar the file
-	tarfile := tarhelper.NewUntar(sr, filepath.Join(c.directory))
-	tarfile.PreserveOwners = true
-	tarfile.PreservePermissions = true
-	tarfile.Compression = tarhelper.DETECT
-	tarfile.AbsoluteRoot = c.directory
-	if err := tarfile.Extract(); err != nil {
-		return fmt.Errorf("failed to extract stage2 image filesystem: %v", err)
-	}
-
-	// put the hash on the pod manifest
-	for i, app := range c.pod.Apps {
-		if app.Image.Name.Equals(c.image.Name) {
-			if err := app.Image.ID.Set(fmt.Sprintf("sha512-%s", sr.Sha512())); err != nil {
-				return err
-			}
-			c.pod.Apps[i] = app
-		}
-	}
+	c.storage = storage
 
 	c.log.Debug("Done up stage2 filesystem")
 	return nil
@@ -207,12 +179,14 @@ func (c *Container) launchStage2() error {
 
 	// Initialize the stage2 launcher
 	launcher := &client.Launcher{
-		SocketPath: c.socketPath(),
-		Directory:  c.stage3Path(),
-		Chroot:     true,
-		Cgroup:     c.cgroup,
-		Stdout:     stage2Stdout,
-		Stderr:     stage2Stdout,
+		SocketPath:     c.socketPath(),
+		Directory:      c.storage.Root(),
+		Chroot:         true,
+		SetupProc:      true,
+		Cgroup:         c.cgroup,
+		Stdout:         stage2Stdout,
+		Stderr:         stage2Stdout,
+		MountNamespace: c.storage.NS(),
 	}
 
 	// Instrument the isolators that must be done before the chroot operation is
@@ -228,7 +202,7 @@ func (c *Container) launchStage2() error {
 	}
 
 	// Apply any volumes that are needed as mount points on the launcher
-	if c.manager.volumeDirectory != "" {
+	if c.manager.Options.VolumeDirectory != "" {
 		podApp := c.pod.Apps.Get(types.ACName(c.image.Name.String()))
 		for _, mp := range c.image.App.MountPoints {
 			hostPath, err := c.manager.getVolumePath(mp.Name.String())
@@ -240,7 +214,7 @@ func (c *Container) launchStage2() error {
 			if err != nil {
 				return err
 			}
-			podMount := strings.Replace(podPath, c.stage3Path(), client.DefaultChrootPath, 1)
+			podMount := strings.Replace(podPath, c.storage.HostRoot(), client.DefaultChrootPath, 1)
 
 			launcher.MountPoints = append(launcher.MountPoints, &client.MountPoint{
 				Source:      hostPath,
@@ -322,6 +296,13 @@ func (c *Container) startApp() error {
 	// processes die.
 	go c.waitLoop()
 
+	return nil
+}
+
+// markStorageRunning is used to pass an indicator to the storage handler that
+// the container is now running.
+func (c *Container) markStorageRunning() error {
+	c.storage.MarkRunning()
 	return nil
 }
 
@@ -466,6 +447,11 @@ func (c *Container) stoppingDirectories() error {
 
 	if err := unmountDirectories(c.directory); err != nil {
 		c.log.Warnf("failed to unmount container directories: %s", err)
+		return err
+	}
+
+	// Cleanup the storage provisioner
+	if err := c.storage.Cleanup(); err != nil {
 		return err
 	}
 

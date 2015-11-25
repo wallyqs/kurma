@@ -4,11 +4,13 @@ package api
 
 import (
 	"net"
-	"time"
+	"net/http"
 
-	pb "github.com/apcera/kurma/stage1/client"
+	"github.com/apcera/kurma/stage1/client"
 	"github.com/apcera/logray"
-	"google.golang.org/grpc"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/rpc"
+	"github.com/gorilla/rpc/json"
 )
 
 // Options devices the configuration fields that can be passed to New() when
@@ -22,6 +24,7 @@ type Options struct {
 type Server struct {
 	log     *logray.Logger
 	options *Options
+	client  client.Client
 }
 
 // New creates and returns a new Server object with the provided Options as
@@ -41,31 +44,32 @@ func New(options *Options) *Server {
 // Start begins the server. It will return an error if starting the Server
 // fails, or return nil on success.
 func (s *Server) Start() error {
+	client, err := client.New("unix:///var/lib/kurma.sock")
+	if err != nil {
+		return err
+	}
+	s.client = client
+
 	l, err := net.Listen("tcp", s.options.BindAddress)
 	if err != nil {
 		return err
 	}
-	defer l.Close()
 
-	// create the client RPC connection to the host
-	dialer := func(addr string, timeout time.Duration) (net.Conn, error) {
-		return net.DialTimeout("unix", addr, timeout)
-	}
-	conn, err := grpc.Dial("/var/lib/kurma.sock", grpc.WithDialer(dialer), grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
+	svr := rpc.NewServer()
+	svr.RegisterCodec(json.NewCodec(), "application/json")
+	svr.RegisterService(&ContainerService{server: s}, "Containers")
+	svr.RegisterService(&ImageService{server: s}, "Images")
 
-	// create the RPC handler
-	rpc := &rpcServer{
-		log:    s.log.Clone(),
-		client: pb.NewKurmaClient(conn),
-	}
+	router := mux.NewRouter()
+	router.Handle("/rpc", svr)
+	router.HandleFunc("/containers/enter", s.containerEnterRequest).Methods("GET")
+	router.HandleFunc("/images/create", s.imageCreateRequest).Methods("POST")
 
-	// create the gRPC server and run
-	gs := grpc.NewServer()
-	pb.RegisterKurmaServer(gs, rpc)
 	s.log.Debug("Server is ready")
-	gs.Serve(l)
+	go func() {
+		if err := http.Serve(l, router); err != nil {
+			s.log.Errorf("Failed ot start HTTP server: %v", err)
+		}
+	}()
 	return nil
 }

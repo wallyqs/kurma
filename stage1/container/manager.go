@@ -4,12 +4,12 @@ package container
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
 
 	kschema "github.com/apcera/kurma/schema"
+	"github.com/apcera/kurma/stage1/image"
 	"github.com/apcera/kurma/util/cgroups"
 	"github.com/apcera/logray"
 	"github.com/apcera/util/uuid"
@@ -29,17 +29,15 @@ type Options struct {
 // Manager handles the management of the containers running and available on the
 // current host.
 type Manager struct {
-	Log *logray.Logger
+	Log     *logray.Logger
+	Options *Options
+
+	imageManager *image.Manager
+	cgroup       *cgroups.Cgroup
+	volumeLock   sync.Mutex
 
 	containers     map[string]*Container
 	containersLock sync.RWMutex
-
-	volumeDirectory string
-	volumeLock      sync.Mutex
-
-	cgroup             *cgroups.Cgroup
-	containerDirectory string
-	requiredNamespaces []string
 
 	HostSocketFile string
 }
@@ -47,7 +45,7 @@ type Manager struct {
 // NewManager creates a new Manager with the provided options. It will ensure
 // the manager is setup and ready to create containers with the provided
 // configuration.
-func NewManager(opts *Options) (*Manager, error) {
+func NewManager(imageManager *image.Manager, opts *Options) (*Manager, error) {
 	// validate cgroups is properly setup on the host
 	if err := cgroups.CheckCgroups(); err != nil {
 		return nil, fmt.Errorf("failed to check cgroups: %v", err)
@@ -60,12 +58,11 @@ func NewManager(opts *Options) (*Manager, error) {
 	}
 
 	m := &Manager{
-		Log:                logray.New(),
-		containers:         make(map[string]*Container),
-		containerDirectory: opts.ContainerDirectory,
-		volumeDirectory:    opts.VolumeDirectory,
-		cgroup:             cg,
-		requiredNamespaces: opts.RequiredNamespaces,
+		Log:          logray.New(),
+		Options:      opts,
+		imageManager: imageManager,
+		containers:   make(map[string]*Container),
+		cgroup:       cg,
 	}
 	return m, nil
 }
@@ -92,7 +89,7 @@ func (manager *Manager) Validate(imageManifest *schema.ImageManifest) error {
 				"user":  niso.User,
 				"uts":   niso.UTS,
 			}
-			for _, ns := range manager.requiredNamespaces {
+			for _, ns := range manager.Options.RequiredNamespaces {
 				f, exists := checks[ns]
 				if !exists {
 					return fmt.Errorf("Internal server error")
@@ -111,10 +108,15 @@ func (manager *Manager) Validate(imageManifest *schema.ImageManifest) error {
 // Create begins launching a container with the provided image manifest and
 // reader as the source of the ACI.
 func (manager *Manager) Create(
-	id, name string, imageManifest *schema.ImageManifest, image io.ReadCloser,
+	id, name string, imageManifest *schema.ImageManifest, imageHash string,
 ) (*Container, error) {
 	// revalidate the image
 	if err := manager.Validate(imageManifest); err != nil {
+		return nil, err
+	}
+
+	hash, err := types.NewHash(imageHash)
+	if err != nil {
 		return nil, err
 	}
 
@@ -133,12 +135,12 @@ func (manager *Manager) Create(
 
 	// populate the container
 	container := &Container{
-		manager:          manager,
-		log:              manager.Log.Clone(),
-		uuid:             id,
-		waitch:           make(chan bool),
-		initialImageFile: image,
-		image:            imageManifest,
+		manager:   manager,
+		log:       manager.Log.Clone(),
+		uuid:      id,
+		waitch:    make(chan bool),
+		imageHash: imageHash,
+		image:     imageManifest,
 		pod: &schema.PodManifest{
 			ACKind:      schema.PodManifestKind,
 			ACVersion:   schema.AppContainerVersion,
@@ -148,6 +150,7 @@ func (manager *Manager) Create(
 					Name: types.ACName(name),
 					App:  imageManifest.App,
 					Image: schema.RuntimeImage{
+						ID:     *hash,
 						Name:   &imageManifest.Name,
 						Labels: imageManifest.Labels,
 					},
@@ -201,9 +204,9 @@ func (manager *Manager) Container(uuid string) *Container {
 // an operation. This is a temporary hack util a Container object can specify
 // its own path.
 func (manager *Manager) SwapDirectory(containerDirectory string, f func()) {
-	dir := manager.containerDirectory
-	manager.containerDirectory = containerDirectory
-	defer func() { manager.containerDirectory = dir }()
+	dir := manager.Options.ContainerDirectory
+	manager.Options.ContainerDirectory = containerDirectory
+	defer func() { manager.Options.ContainerDirectory = dir }()
 	f()
 }
 
@@ -214,7 +217,7 @@ func (manager *Manager) getVolumePath(name string) (string, error) {
 		return "", fmt.Errorf("invalid characters present in volume name")
 	}
 
-	volumePath := filepath.Join(manager.volumeDirectory, name)
+	volumePath := filepath.Join(manager.Options.VolumeDirectory, name)
 
 	manager.volumeLock.Lock()
 	defer manager.volumeLock.Unlock()

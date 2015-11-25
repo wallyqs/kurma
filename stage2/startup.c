@@ -34,7 +34,7 @@ void cspawner(int argc, char **argv) {
 	clone_destination_data *args;
 	static int new_ipc_namespace, new_mount_namespace, new_network_namespace,
 		new_pid_namespace, new_uts_namespace, new_user_namespace, detach, chroot,
-		privileged;
+		privileged, setup_proc;
 	int c;
 	char **tmp;
 
@@ -104,6 +104,7 @@ void cspawner(int argc, char **argv) {
 				{"detach", no_argument, &detach, 1},
 				{"chroot", no_argument, &chroot, 1},
 				{"host-privileged", no_argument, &privileged, 1},
+				{"setup-proc", no_argument, &setup_proc, 1},
 				{0, 0, 0, 0}
 			};
 		/* getopt_long stores the option index here. */
@@ -222,6 +223,7 @@ void cspawner(int argc, char **argv) {
 	args->detach = detach;
 	args->chroot = chroot;
 	args->privileged = privileged;
+	args->setup_proc = setup_proc;
 
 	// ensure the final element in arrays is null
 	args->environment = realloc(args->environment, sizeof(char*) * (env_len+1));

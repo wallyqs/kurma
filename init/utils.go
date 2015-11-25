@@ -5,15 +5,12 @@ package init
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"syscall"
 
-	"github.com/apcera/util/tarhelper"
-	"github.com/appc/spec/schema"
 	"github.com/vishvananda/netlink"
 )
 
@@ -121,35 +118,6 @@ func (r *runner) handleSIGCHLD(ch chan os.Signal) {
 	}
 }
 
-// findManifest retrieves the manifest from the provided reader and unmarshals
-// it.
-func findManifest(r io.Reader) (*schema.ImageManifest, error) {
-	arch, err := tarhelper.DetectArchiveCompression(r)
-	if err != nil {
-		return nil, err
-	}
-
-	for {
-		header, err := arch.Next()
-		if err == io.EOF {
-			return nil, fmt.Errorf("failed to locate manifest file")
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		if filepath.Clean(header.Name) != "manifest" {
-			continue
-		}
-
-		var manifest *schema.ImageManifest
-		if err := json.NewDecoder(arch).Decode(&manifest); err != nil {
-			return nil, err
-		}
-		return manifest, nil
-	}
-}
-
 // formatDisk formats the device with the specified fstype.
 func formatDisk(device, fstype string) error {
 	cmd := exec.Command(fmt.Sprintf("mkfs.%s", fstype), device)
@@ -199,4 +167,21 @@ func getConfigurationFromFile(file string) (*kurmaConfig, error) {
 		return nil, fmt.Errorf("failed to parse configuration file: %v", err)
 	}
 	return config, nil
+}
+
+// removeIfFile will inspect the uri, and if the uri is a file scheme, it will
+// atempt to remove the specified file. This is primarily used after launching
+// the initial containers. If they're from the local filesystem, we'll remove
+// them to keep memory usage down on the tmpfs root.
+func removeIfFile(uri string) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return
+	}
+
+	if u.Scheme != "file" {
+		return
+	}
+
+	os.Remove(u.Path)
 }

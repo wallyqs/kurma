@@ -13,20 +13,8 @@ import (
 	"github.com/appc/spec/schema/types"
 )
 
-func (c *Container) imageManifestPath() string {
-	return filepath.Join(c.directory, "manifest")
-}
-
-func (c *Container) containerManifestPath() string {
-	return filepath.Join(c.directory, "container")
-}
-
 func (c *Container) stage2LogPath() string {
 	return filepath.Join(c.directory, "stage2.log")
-}
-
-func (c *Container) stage3Path() string {
-	return filepath.Join(c.directory, "rootfs")
 }
 
 func (c *Container) socketPath() string {
@@ -107,7 +95,7 @@ func unmountDirectories(path string) error {
 // the full host path to the directory.
 func (c *Container) ensureContainerPathExists(name string) (string, error) {
 	parts := strings.Split(name, string(os.PathSeparator))
-	resolvedPath := c.stage3Path()
+	resolvedPath := c.storage.HostRoot()
 	containerPath := ""
 
 	for _, p := range parts {
@@ -144,7 +132,7 @@ func (c *Container) ensureContainerPathExists(name string) (string, error) {
 func (c *Container) resolveSymlinkDir(name string) (string, error) {
 	// This is used to compare paths to ensure that they are exactly contained
 	// completely within s.RootDirectory()
-	root := c.stage3Path()
+	root := c.storage.HostRoot()
 	checkList := func(fn string) (string, bool) {
 		fnPath := filepath.Join(root, fn)
 		if len(fnPath) < len(root) {

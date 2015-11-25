@@ -29,6 +29,13 @@ type Launcher struct {
 	Uidmap     string
 	Gidmap     string
 
+	IPCNamespace     int
+	MountNamespace   int
+	NetworkNamespace int
+	PIDNamespace     int
+	UTSNamespace     int
+	UserNamespace    int
+
 	NewIPCNamespace     bool
 	NewMountNamespace   bool
 	NewNetworkNamespace bool
@@ -40,6 +47,7 @@ type Launcher struct {
 	MountPoints    []*MountPoint
 	Chroot         bool
 	Debug          bool
+	SetupProc      bool
 
 	Cgroup *cgroups.Cgroup
 
@@ -68,12 +76,19 @@ func (l *Launcher) Run() (Client, error) {
 		// Our Chroot flag is used against the Client.Chroot() call.
 		Chroot:              false,
 		Detach:              true,
+		SetupProc:           l.SetupProc,
 		Stdin:               l.Stdin,
 		Stdout:              l.Stdout,
 		Stderr:              l.Stderr,
 		Uidmap:              l.Uidmap,
 		Gidmap:              l.Gidmap,
 		HostPrivileged:      l.HostPrivileged,
+		IPCNamespace:        l.IPCNamespace,
+		MountNamespace:      l.MountNamespace,
+		NetworkNamespace:    l.NetworkNamespace,
+		PIDNamespace:        l.PIDNamespace,
+		UTSNamespace:        l.UTSNamespace,
+		UserNamespace:       l.UserNamespace,
 		NewIPCNamespace:     l.NewIPCNamespace,
 		NewMountNamespace:   l.NewMountNamespace,
 		NewNetworkNamespace: l.NewNetworkNamespace,
