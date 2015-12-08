@@ -40,7 +40,8 @@ func processCmdline(values map[string]string) *kurmaConfig {
 		case "kurma.modules":
 			config.Modules = strings.Split(v, ",")
 		case "kurma.booted":
-			config.SuccessfulBoot = &v
+			v2 := v
+			config.SuccessfulBoot = &v2
 		}
 	}
 
