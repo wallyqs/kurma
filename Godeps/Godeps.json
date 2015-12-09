@@ -128,8 +128,8 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/api/resource",
-			"Comment": "v1.2.0-alpha.1-1126-g407f9b9",
-			"Rev": "407f9b9e421693ab5bd623954c58c8d8e6c9add8"
+			"Comment": "v1.2.0-alpha.4-529-gfa30b79",
+			"Rev": "fa30b796a8d6ad0ba641462c65ab46cc10c5e4bc"
 		},
 		{
 			"ImportPath": "speter.net/go/exp/math/dec/inf",
