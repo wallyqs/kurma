@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include <sys/capability.h>
 #include <sys/types.h>
 
 // The maximum number of requests that can exist in the listen queue for the
@@ -301,6 +302,9 @@ int uidforuser2(char *user);
 // looking up the group in /etc/group or by converting it to an integer if it is
 // all digits.
 int gidforgroup2(char *group);
+
+// Handles configuring all the capabilities in the binding set.
+void dropBoundingCapabilities2(cap_t newcap);
 
 // -------
 // Logging

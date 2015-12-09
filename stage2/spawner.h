@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <sys/capability.h>
 
 // This is the private structure used within the clone_* calls. This contains
 // a copy of all data used as well as the stack. This is allocated via a
@@ -82,6 +83,9 @@ typedef struct clone_destination_data {
 	// Tells the spawner to chroot into the directory.
 	bool chroot;
 
+	// The capabilities to apply to the process within the container.
+	char *capabilities;
+
 	// The UID mapping to write to the container's uid_map file
 	char *uidmap;
 
@@ -135,6 +139,7 @@ void waitforstop(pid_t child);
 void waitforexit(pid_t child);
 int uidforuser(char *user);
 int gidforgroup(char *group);
+void dropBoundingCapabilities(cap_t newcap);
 
 // -------
 // Logging

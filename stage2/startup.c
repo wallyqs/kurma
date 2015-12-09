@@ -101,6 +101,8 @@ void cspawner(int argc, char **argv) {
 				{"max-open-files", required_argument, 0, 'r'},
 				{"max-processes", required_argument, 0, 's'},
 
+				{"capabilities", required_argument, 0, 't'},
+
 				{"detach", no_argument, &detach, 1},
 				{"chroot", no_argument, &chroot, 1},
 				{"host-privileged", no_argument, &privileged, 1},
@@ -110,7 +112,7 @@ void cspawner(int argc, char **argv) {
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		c = getopt_long(argc, argv, "abcdefghijklmnopqrs", long_options, &option_index);
+		c = getopt_long(argc, argv, "abcdefghijklmnopqrst", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -204,6 +206,11 @@ void cspawner(int argc, char **argv) {
 			break;
 		case 's':
 		  args->max_processes = atoi(optarg);
+			break;
+
+			// capabilities
+		case 't':
+			args->capabilities = optarg;
 			break;
 
 		case '?':

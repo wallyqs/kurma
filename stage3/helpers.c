@@ -15,7 +15,9 @@
 #include <string.h>
 #include <sysexits.h>
 
+#include <sys/capability.h>
 #include <sys/mount.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -259,6 +261,21 @@ int gidforgroup2(char *group) {
 	}
 
 	return -1;
+}
+
+// dropBoundingCapabilities2 is used to drop capabilities from the bound set that
+// are not specified in newcap. This is needed to ensure the capabilities are
+// applied properly when finalized.
+void dropBoundingCapabilities2(cap_t newcap) {
+	cap_flag_value_t val;
+	cap_value_t i;
+	for (i = 0; i <= CAP_LAST_CAP; i++) {
+		if (cap_get_flag(newcap, i, CAP_EFFECTIVE, &val) != 0)
+			continue;
+		if (val == CAP_SET)
+			continue;
+		prctl(PR_CAPBSET_DROP, i, 0, 0, 0);
+	}
 }
 
 #endif

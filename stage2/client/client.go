@@ -30,6 +30,7 @@ type Launcher struct {
 	Group         string
 	Uidmap        string
 	Gidmap        string
+	Capabilities  string
 
 	IPCNamespace     int
 	MountNamespace   int
@@ -104,6 +105,11 @@ func (l *Launcher) generateArgs(cmdargs []string) ([]string, []*os.File) {
 	}
 	if l.Group != "" {
 		args = append(args, "--group", l.Group)
+	}
+
+	// Pass capabilties, if set
+	if l.Capabilities != "" {
+		args = append(args, "--capabilities", l.Capabilities)
 	}
 
 	// Add handlers for existing namespaces

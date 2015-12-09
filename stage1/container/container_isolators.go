@@ -26,6 +26,7 @@ func (c *Container) setupLinuxNamespaceIsolator(launcher *client.Launcher) error
 			launcher.NewUserNamespace = niso.User()
 			launcher.NewUTSNamespace = niso.UTS()
 			nsisolators = true
+			c.pod.Isolators = append(c.pod.Isolators, *iso)
 		}
 	}
 	if !nsisolators {
@@ -108,6 +109,7 @@ func (c *Container) setupHostPrivilegeIsolator(launcher *client.Launcher) error 
 						})
 				}
 			}
+			c.pod.Isolators = append(c.pod.Isolators, *iso)
 		}
 	}
 
@@ -152,6 +154,7 @@ func (c *Container) setupHostApiAccessIsolator(launcher *client.Launcher) error 
 						Flags:       syscall.MS_BIND,
 					})
 			}
+			c.pod.Isolators = append(c.pod.Isolators, *iso)
 		}
 	}
 

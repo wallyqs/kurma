@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/apcera/kurma/util/capability"
 	"github.com/apcera/util/proc"
 	"github.com/appc/spec/schema/types"
 )
@@ -222,4 +223,22 @@ func convertACIdentifierToACName(name types.ACIdentifier) (*types.ACName, error)
 		return nil, err
 	}
 	return types.NewACName(n)
+}
+
+func setCap(cap *capability.Cap, acapval types.LinuxCapability, setvsclear bool) error {
+	capval, err := capability.FromName(string(acapval))
+	if err != nil {
+		return fmt.Errorf("failed to parse capability %q", acapval)
+	}
+
+	if err := cap.SetEffectiveCapability(capval, setvsclear); err != nil {
+		return fmt.Errorf("failed to set capability %q", acapval)
+	}
+	if err := cap.SetPermittedCapability(capval, setvsclear); err != nil {
+		return fmt.Errorf("failed to set capability %q", acapval)
+	}
+	if err := cap.SetInheritableCapability(capval, setvsclear); err != nil {
+		return fmt.Errorf("failed to set capability %q", acapval)
+	}
+	return nil
 }

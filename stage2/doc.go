@@ -1,7 +1,5 @@
 // Copyright 2014-2015 Apcera Inc. All rights reserved.
 
-// +build linux,cgo
-
 // This spawner implementation is used to initiate the creation of a container.
 //
 // This is implemented looking like a Go binary for ease of use and reusing the
@@ -10,6 +8,7 @@
 // take over the execution and run the stage2 code.
 package stage2
 
+// #cgo linux LDFLAGS: -lcap
 import "C"
 
 import _ "github.com/apcera/kurma/stage3"

@@ -39,6 +39,7 @@ func TestWaitRequest(t *testing.T) {
 		[]string{stdout, stderr},
 		[]string{"99", "99"},
 		[]string{},
+		[]string{},
 	}
 	reply, err := MakeRequest(socket, request, 10*time.Second)
 	TestExpectSuccess(t, err)
@@ -122,6 +123,7 @@ func TestWaitRequestDoesntBlockProcessesAreFinished(t *testing.T) {
 		[]string{"KTEST=VTEST"},
 		[]string{stdout, stderr},
 		[]string{"99", "99"},
+		[]string{},
 		[]string{},
 	}
 	reply, err := MakeRequest(socket, request, 10*time.Second)
