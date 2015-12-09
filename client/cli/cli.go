@@ -3,108 +3,65 @@
 package cli
 
 import (
-	"flag"
 	"fmt"
-	"strings"
+	"net"
+	"net/url"
+	"os"
 
-	// Include so godep properly finds it.
-	_ "github.com/apcera/util/terminal"
+	"github.com/apcera/kurma/stage1/client"
+	"github.com/spf13/cobra"
 )
 
 const (
-	defaultConfirmation = "Is this correct?"
-	askYes              = "Y/n"
-	askNo               = "y/N"
-	EnvKurmaHost        = "KURMA_HOST"
+	defaultKurmaRemotePort = "12312"
+	envKurmaHost           = "KURMA_HOST"
 )
 
 var (
-	// Verbose increases output in some commands.
-	Verbose bool
-	// VeryVerbose increases output further.
-	VeryVerbose bool
-	// ShowVersion triggers the 'version' command when called.
-	ShowVersion bool
-
-	// KurmaHost is the host (ip or name) of the Kurma server we're talking to.
+	Verbose   bool
+	Debug     bool
 	KurmaHost string
-
-	// global map of defined commands
-	apcCommands = make(map[string]cmdDef)
-	// global map of command aliases
-	aliasedCommands = make(map[string]cmdDef)
 )
 
-// ApcInput describes the minimal functionality required by a Cmd's ValidatedInput.
-// Each APC command implements this as needed.
-type ApcInput interface {
-	ParseArgs([]string) error
-	Validate() error
+var RootCmd = &cobra.Command{
+	Use:   "kurma-cli",
+	Short: "kurma-cli",
+	Long:  "kurma-cli is the command line client for kurma",
+	Run: func(cmd *cobra.Command, args []string) {
+		f := cmd.HelpFunc()
+		f(cmd, args)
+	},
 }
 
-// CliWrapper should interpret the command line args into typed input.
-type CliWrapper func(*Cmd) error
-
-// the internal implementation of the command
-type impl func(*Cmd) error
-type flagParser func(*Cmd)
-
-// Register a new command to be available from the command line. The name is the
-// name of the command, which may contain spaces for an implied hierarchy, or
-// colons for an explicit hierarchy.
-//
-// Parameters: f inteprets flags from the command line, e is the implementation
-// of the command, h is the help message that is presented by 'apc help [cmd]'
-//
-// We have a choice for h: take interface{} and accept const strings, or switch
-// to fmt.Stringer and replace the consts with vars, all wrapped with S()
-// (help.S).  For clarity elsewhere, we accept the sacrifice of taking
-// interface{} here.  (Since string type doesn't have a String() method)
-func DefineCommand(name string, f flagParser, i impl, c CliWrapper, h interface{}) {
-	if _, ok := apcCommands[name]; ok {
-		fmt.Printf("Command already defined: %q\n", name)
-	}
-	apcCommands[name] = cmdDef{Name: name, flagParser: f, impl: i, cli: c, Help: h}
+func init() {
+	RootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
+	RootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "d", false, "debug output")
+	RootCmd.PersistentFlags().StringVarP(&KurmaHost, "host", "H", os.Getenv(envKurmaHost), "kurma host to talk to")
 }
 
-// DefineAlias allows a defined command to be invoked using an alternate name
-func DefineAlias(orig string, alternates ...string) {
-	origCmd, ok := apcCommands[orig]
-	if !ok {
-		panic(fmt.Errorf("DefineAlias: original command not found: %q", orig))
+func GetClient() client.Client {
+	c, err := client.New(determineKurmaHostPort())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create client: %v", err)
+		os.Exit(1)
 	}
-	for _, alt := range alternates {
-		aliasedCommands[alt] = origCmd
-	}
+	return c
 }
 
-func FindCommand(nameparts []string) (*cmdDef, int, error) {
-	// Attempt to match command by name from longest to shortest.
-	for i := len(nameparts); i > 0; i-- {
-		name := strings.Join(nameparts[0:i], " ")
-		if len(apcCommands) == 0 {
-			return nil, -1, fmt.Errorf("No commands defined.")
-		}
-		if def, ok := apcCommands[name]; ok {
-			return &def, i, nil
-		}
-		// Command not found by name, so attempt to lookup by aliases.
-		if def, ok := aliasedCommands[name]; ok {
-			return &def, i, nil
-		}
+func determineKurmaHostPort() string {
+	// See if KurmaHost is a socket file
+	if fi, _ := os.Stat(KurmaHost); fi != nil {
+		u := url.URL{Scheme: "unix", Path: KurmaHost}
+		return u.String()
 	}
-	return nil, -1, fmt.Errorf("Command not found: %s", strings.Join(nameparts, " "))
-}
 
-// addGlobalFlags registers default flags on the FlagSet f.
-func addGlobalFlags(f *flag.FlagSet) {
-	f.BoolVar(&Verbose, "vv", false, "")
-	f.BoolVar(&Verbose, "verbose", false, "")
-	f.BoolVar(&VeryVerbose, "vvv", false, "")
-	f.BoolVar(&VeryVerbose, "very-verbose", false, "")
-	f.BoolVar(&ShowVersion, "version", false, "")
-	f.BoolVar(&ShowVersion, "ver", false, "")
-	f.BoolVar(&ShowVersion, "v", false, "")
-	f.StringVar(&KurmaHost, "host", "", "")
-	f.StringVar(&KurmaHost, "H", "", "")
+	// quick check if it is referring to the local host
+	ip := net.ParseIP(KurmaHost)
+	if ip != nil {
+		u := url.URL{Scheme: "tcp", Host: net.JoinHostPort(KurmaHost, defaultKurmaRemotePort)}
+		return u.String()
+	}
+
+	u := url.URL{Scheme: "unix", Path: "/var/lib/kurma.sock"}
+	return u.String()
 }

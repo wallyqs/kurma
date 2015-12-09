@@ -37,6 +37,9 @@ typedef struct clone_destination_data {
 	// The file descriptor that will be duplicated into the stderr position.
 	int stderrfd;
 
+	// The setting for whether proc should be mounted for the new container.
+	bool setup_proc;
+
 	// The IPC namespace that should be joined after cloning.
 	char *ipcnamespace;
 

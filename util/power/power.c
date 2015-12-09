@@ -13,9 +13,9 @@ void writesysreq(char c) {
 
 	int fd = open("/host/proc/sysrq-trigger", O_WRONLY);
 	if (fd == -1) {
-    perror("open");
-    exit(1);
-  }
+		perror("open");
+		exit(1);
+	}
 	if (write(fd, &c, 1) < 0) {
 		perror("write");
 		exit(1);

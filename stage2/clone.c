@@ -159,7 +159,7 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 		error(1, errno, "fork");
 	case 0:
 		// create our proc mount and enter the new root
-		if (args->new_mount_namespace) {
+		if (args->setup_proc) {
 			DEBUG("Configuring /proc\n");
 			mountproc();
 		}

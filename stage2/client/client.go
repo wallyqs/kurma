@@ -45,6 +45,8 @@ type Launcher struct {
 	NewUTSNamespace     bool
 	NewUserNamespace    bool
 
+	SetupProc bool
+
 	MaxOpenFiles int
 	MaxProcesses int
 
@@ -156,6 +158,11 @@ func (l *Launcher) generateArgs(cmdargs []string) ([]string, []*os.File) {
 	// Check for a privileged isolator
 	if l.HostPrivileged {
 		args = append(args, "--host-privileged")
+	}
+
+	// Check whether proc should be configured
+	if l.SetupProc {
+		args = append(args, "--setup-proc")
 	}
 
 	// Loop and append all the cgroups taskfiles the container should be in.

@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/apcera/kurma",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.4.1",
 	"Packages": [
 		"./..."
 	],
@@ -15,35 +15,39 @@
 		},
 		{
 			"ImportPath": "github.com/apcera/util/envmap",
-			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
+			"Rev": "6ce6047f80a396c3e5f7902ad95cb37169f33fc9"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/hashutil",
-			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
+			"Rev": "6ce6047f80a396c3e5f7902ad95cb37169f33fc9"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/proc",
-			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
+			"Rev": "6ce6047f80a396c3e5f7902ad95cb37169f33fc9"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/str",
-			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
+			"Rev": "6ce6047f80a396c3e5f7902ad95cb37169f33fc9"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/tarhelper",
-			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
+			"Rev": "6ce6047f80a396c3e5f7902ad95cb37169f33fc9"
 		},
 		{
-			"ImportPath": "github.com/apcera/util/terminal",
-			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
+			"ImportPath": "github.com/apcera/util/tempfile",
+			"Rev": "6ce6047f80a396c3e5f7902ad95cb37169f33fc9"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/testtool",
-			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
+			"Rev": "6ce6047f80a396c3e5f7902ad95cb37169f33fc9"
 		},
 		{
 			"ImportPath": "github.com/apcera/util/uuid",
-			"Rev": "567d4bc83f769b852e0e6c53b4cb9628247e37bd"
+			"Rev": "6ce6047f80a396c3e5f7902ad95cb37169f33fc9"
+		},
+		{
+			"ImportPath": "github.com/apcera/util/wsconn",
+			"Rev": "6ce6047f80a396c3e5f7902ad95cb37169f33fc9"
 		},
 		{
 			"ImportPath": "github.com/appc/spec/discovery",
@@ -60,17 +64,51 @@
 			"Rev": "d043ae190b3202550d026daf009359bb5d761672"
 		},
 		{
+			"ImportPath": "github.com/cpuguy83/go-md2man/md2man",
+			"Comment": "v1.0.4",
+			"Rev": "71acacd42f85e5e82f70a55327789582a5200a90"
+		},
+		{
 			"ImportPath": "github.com/creack/termios/raw",
 			"Rev": "d60649a6c40aa68303e3d69e0423a1e7aedf4bbd"
 		},
 		{
-			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "deb4a5e3b15dea23f340a311eea995421845c356"
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "1c83b3eabd45b6d76072b66b746c20815fb2872d"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "9c068cf16d982f8bd444b8c352acbeec34c4fe5b"
+		},
+		{
+			"ImportPath": "github.com/gorilla/rpc",
+			"Rev": "64e20900b8aa38bb0771dec71ba3bcc2b07fc8ec"
+		},
+		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Rev": "361d4c0ffd78338ebe0a9e6320cdbe115d7dc026"
+		},
+		{
+			"ImportPath": "github.com/inconshreveable/mousetrap",
+			"Rev": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
 		},
 		{
 			"ImportPath": "github.com/kr/pty",
 			"Comment": "release.r56-29-gf7ee69f",
 			"Rev": "f7ee69f31298ecbe5d2b349c711e2547a617d398"
+		},
+		{
+			"ImportPath": "github.com/russross/blackfriday",
+			"Comment": "v1.4-2-g300106c",
+			"Rev": "300106c228d52c8941d4b3de6054a6062a86dda3"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/sanitized_anchor_name",
+			"Rev": "10ef21a441db47d8b13ebcc5fd2310f636973c77"
+		},
+		{
+			"ImportPath": "github.com/spf13/cobra",
+			"Rev": "1c44ec8d3f1552cac48999f9306da23c4d8a288b"
 		},
 		{
 			"ImportPath": "github.com/spf13/pflag",
@@ -81,28 +119,8 @@
 			"Rev": "8e810149a2e531fed9b837c0c7d8a8922d2bedf7"
 		},
 		{
-			"ImportPath": "golang.org/x/net/context",
-			"Rev": "21c3935a8fc0f954d03e6b8a560c9600ffee38d2"
-		},
-		{
 			"ImportPath": "golang.org/x/net/html",
 			"Rev": "21c3935a8fc0f954d03e6b8a560c9600ffee38d2"
-		},
-		{
-			"ImportPath": "golang.org/x/net/http2",
-			"Rev": "21c3935a8fc0f954d03e6b8a560c9600ffee38d2"
-		},
-		{
-			"ImportPath": "golang.org/x/net/internal/timeseries",
-			"Rev": "21c3935a8fc0f954d03e6b8a560c9600ffee38d2"
-		},
-		{
-			"ImportPath": "golang.org/x/net/trace",
-			"Rev": "21c3935a8fc0f954d03e6b8a560c9600ffee38d2"
-		},
-		{
-			"ImportPath": "google.golang.org/grpc",
-			"Rev": "ebeb34ad2f2ae973710873004d57a19cd5e2a931"
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/api/resource",

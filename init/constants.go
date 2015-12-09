@@ -20,9 +20,9 @@ var (
 		(*runner).startUdev,
 		(*runner).mountDisks,
 		(*runner).cleanOldPods,
+		(*runner).rescanImages,
 		(*runner).configureHostname,
 		(*runner).configureNetwork,
-		(*runner).rootReadonly,
 		(*runner).markBootSuccessful,
 		(*runner).setupDiscoveryProxy,
 		(*runner).startNTP,
@@ -30,6 +30,7 @@ var (
 		(*runner).startInitContainers,
 		(*runner).displayNetwork,
 		(*runner).startConsole,
+		(*runner).rootReadonly,
 	}
 )
 

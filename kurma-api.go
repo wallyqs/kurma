@@ -5,6 +5,10 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"runtime"
+
 	"github.com/apcera/kurma/client/api"
 	"github.com/apcera/logray"
 )
@@ -16,6 +20,7 @@ func main() {
 
 	s := api.New(opts)
 	if err := s.Start(); err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Failure running process: %v", err)
 	}
+	runtime.Goexit()
 }

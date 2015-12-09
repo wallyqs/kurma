@@ -4,24 +4,25 @@ package server
 
 import (
 	"net"
+	"net/http"
 	"os"
 
-	pb "github.com/apcera/kurma/stage1/client"
 	"github.com/apcera/kurma/stage1/container"
+	"github.com/apcera/kurma/stage1/image"
 	"github.com/apcera/logray"
-	"google.golang.org/grpc"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/rpc"
+	"github.com/gorilla/rpc/json"
 )
 
 // Options devices the configuration fields that can be passed to New() when
 // instantiating a new Server.
 type Options struct {
-	ParentCgroupName   string
-	ContainerDirectory string
-	RequiredNamespaces []string
-	ContainerManager   *container.Manager
-	SocketFile         string
-	SocketGroup        *int
-	SocketPermissions  *os.FileMode
+	ImageManager      *image.Manager
+	ContainerManager  *container.Manager
+	SocketFile        string
+	SocketGroup       *int
+	SocketPermissions *os.FileMode
 }
 
 // Server represents the process that acts as a daemon to receive container
@@ -48,7 +49,6 @@ func (s *Server) Start() error {
 	if err != nil {
 		return err
 	}
-	defer l.Close()
 
 	// chmod/chown the socket, if specified
 	if s.options.SocketPermissions != nil {
@@ -61,46 +61,23 @@ func (s *Server) Start() error {
 			return err
 		}
 	}
+	s.options.ContainerManager.HostSocketFile = s.options.SocketFile
 
-	// create the RPC handler
-	rpc := &rpcServer{
-		log:            s.log.Clone(),
-		pendingUploads: make(map[string]*pendingContainer),
-	}
+	svr := rpc.NewServer()
+	svr.RegisterCodec(json.NewCodec(), "application/json")
+	svr.RegisterService(&ContainerService{server: s}, "Containers")
+	svr.RegisterService(&ImageService{server: s}, "Images")
 
-	// check if we were given an existing manager
-	if s.options.ContainerManager != nil {
-		rpc.manager = s.options.ContainerManager
-	} else {
-		// initialize the container manager
-		rpc.manager, err = s.initializeManager()
-		if err != nil {
-			return err
-		}
-	}
-	rpc.manager.HostSocketFile = s.options.SocketFile
+	router := mux.NewRouter()
+	router.Handle("/rpc", svr)
+	router.HandleFunc("/containers/enter", s.containerEnterRequest).Methods("GET")
+	router.HandleFunc("/images/create", s.imageCreateRequest).Methods("POST")
 
-	// create the gRPC server and run
-	gs := grpc.NewServer()
-	pb.RegisterKurmaServer(gs, rpc)
 	s.log.Debug("Server is ready")
-	gs.Serve(l)
+	go func() {
+		if err := http.Serve(l, router); err != nil {
+			s.log.Errorf("Failed ot start HTTP server: %v", err)
+		}
+	}()
 	return nil
-}
-
-// initializeManager creates the stage0 manager object which will handle
-// container launching.
-func (s *Server) initializeManager() (*container.Manager, error) {
-	mopts := &container.Options{
-		ParentCgroupName:   s.options.ParentCgroupName,
-		ContainerDirectory: s.options.ContainerDirectory,
-		RequiredNamespaces: s.options.RequiredNamespaces,
-	}
-
-	m, err := container.NewManager(mopts)
-	if err != nil {
-		return nil, err
-	}
-	m.Log = s.log.Clone()
-	return m, nil
 }
