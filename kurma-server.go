@@ -6,9 +6,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 
+	"github.com/apcera/kurma/stage1/container"
+	"github.com/apcera/kurma/stage1/graphstorage/overlay"
+	"github.com/apcera/kurma/stage1/image"
 	"github.com/apcera/kurma/stage1/server"
 	"github.com/apcera/logray"
 )
@@ -26,11 +31,33 @@ func main() {
 		panic(err)
 	}
 
-	opts := &server.Options{
+	storage, err := overlay.New()
+	if err != nil {
+		panic(err)
+	}
+	iopts := &image.Options{
+		Directory: filepath.Join(directory, string("images")),
+	}
+	imageManager, err := image.New(storage, iopts)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create the image manager: %v", err))
+	}
+
+	mopts := &container.Options{
+		ContainerDirectory: filepath.Join(directory, "pods"),
+		VolumeDirectory:    filepath.Join(directory, "volumes"),
 		ParentCgroupName:   parentCgroupName,
-		ContainerDirectory: directory,
 		RequiredNamespaces: []string{"ipc", "mount", "pid", "uts"},
-		SocketFile:         socketfile,
+	}
+	containerManager, err := container.NewManager(imageManager, mopts)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create the container manager: %v", err))
+	}
+
+	opts := &server.Options{
+		ImageManager:     imageManager,
+		ContainerManager: containerManager,
+		SocketFile:       socketfile,
 	}
 
 	s := server.New(opts)

@@ -57,7 +57,7 @@ func RetrieveImage(imageUri string, insecure bool) (ReaderCloserSeeker, error) {
 			return nil, err
 		}
 
-		endpoints, _, err := discovery.DiscoverEndpoints(*app, insecure)
+		endpoints, _, err := discovery.DiscoverEndpoints(*app, nil, insecure)
 		if err != nil {
 			return nil, err
 		}
