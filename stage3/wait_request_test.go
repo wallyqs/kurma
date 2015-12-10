@@ -128,7 +128,11 @@ func TestWaitRequestDoesntBlockProcessesAreFinished(t *testing.T) {
 	TestExpectSuccess(t, err)
 	TestEqual(t, reply, "REQUEST OK\n")
 
-	time.Sleep(200 * time.Millisecond)
+	Timeout(t, time.Second, 50*time.Millisecond, func() bool {
+		tasks, err := cgroup.Tasks()
+		TestExpectSuccess(t, err)
+		return len(tasks) == 2
+	})
 
 	tasks, err := cgroup.Tasks()
 	TestExpectSuccess(t, err)
@@ -153,6 +157,7 @@ func TestWaitRequestDoesntBlockProcessesAreFinished(t *testing.T) {
 		TestExpectSuccess(t, err)
 		return strings.Contains(string(data), "responding to WAIT immediately")
 	})
+	wg.Wait()
 	TestEqual(t, done, true)
 }
 

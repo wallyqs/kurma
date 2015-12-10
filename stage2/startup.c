@@ -201,8 +201,10 @@ void cspawner(int argc, char **argv) {
 			// limits
 		case 'r':
 		  args->max_open_files = atoi(optarg);
+			break;
 		case 's':
 		  args->max_processes = atoi(optarg);
+			break;
 
 		case '?':
 			/* getopt_long already printed an error message. */

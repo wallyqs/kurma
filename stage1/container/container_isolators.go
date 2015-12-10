@@ -145,7 +145,6 @@ func (c *Container) setupHostApiAccessIsolator(launcher *client.Launcher) error 
 
 				// find the container relative path, pre-chroot, and setup the mount
 				m := strings.Replace(dest, c.storage.HostRoot(), client.DefaultChrootPath, 1)
-				launcher.Debug = true
 				launcher.MountPoints = append(launcher.MountPoints,
 					&client.MountPoint{
 						Source:      c.manager.HostSocketFile,
