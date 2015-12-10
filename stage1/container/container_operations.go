@@ -7,11 +7,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/apcera/kurma/stage3/client"
+	"github.com/apcera/kurma/util/capability"
 	"github.com/apcera/util/envmap"
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
@@ -27,6 +29,7 @@ var (
 		(*Container).startingEnvironment,
 		(*Container).startingCgroups,
 		(*Container).launchStage2,
+		(*Container).startingIsolators,
 		(*Container).startApp,
 		(*Container).markStorageRunning,
 	}
@@ -162,6 +165,61 @@ func (c *Container) startingCgroups() error {
 	return nil
 }
 
+// startingIsolators configures the specifics around the ACI image's isolators
+// for cgroups.
+func (c *Container) startingIsolators() error {
+	cap, err := capability.NewFromPid(c.initdPid)
+	if err != nil {
+		return err
+	}
+	capChanged := false
+
+	for _, i := range c.image.App.Isolators {
+		switch iso := i.Value().(type) {
+		case *types.ResourceCPU:
+			if err := c.cgroup.LimitCPU(iso.Limit().MilliValue()); err != nil {
+				return fmt.Errorf("failed to apply CPU resource limit: %v", err)
+			}
+			c.pod.Isolators = append(c.pod.Isolators, i)
+
+		case *types.ResourceMemory:
+			if err := c.cgroup.LimitMemory(iso.Limit().Value()); err != nil {
+				return fmt.Errorf("failed to apply memory resource limit: %v", err)
+			}
+			c.pod.Isolators = append(c.pod.Isolators, i)
+
+		case *types.LinuxCapabilitiesRevokeSet:
+			capChanged = true
+			for _, acapval := range iso.Set() {
+				if err := setCap(cap, acapval, false); err != nil {
+					return err
+				}
+			}
+			c.pod.Isolators = append(c.pod.Isolators, i)
+
+		case *types.LinuxCapabilitiesRetainSet:
+			capChanged = true
+			cap.Clear()
+			for _, acapval := range iso.Set() {
+				if err := setCap(cap, acapval, true); err != nil {
+					return err
+				}
+			}
+			c.pod.Isolators = append(c.pod.Isolators, i)
+		}
+	}
+
+	// if any capabilities had changed, have the initd apply them
+	if capChanged {
+		c.capabilities = cap.String()
+		if c.capabilities == "" {
+			return fmt.Errorf("failed to generate capabilities to apply")
+		}
+	}
+
+	return nil
+}
+
 // Start the initd. This doesn't actually configure it, just starts it so we
 // have a process and namespace to work with in the networking side of the
 // world.
@@ -247,12 +305,25 @@ func (c *Container) launchStage2() error {
 		}
 	}
 
+	// Launch the initd
 	client, err := launcher.Run()
 	if err != nil {
 		return err
 	}
+
+	// Get the initd's pid.
+	pids, err := c.cgroup.Tasks()
+	if err != nil {
+		return fmt.Errorf("Failed to look up processes within the cgroup: %v", err)
+	}
+	if len(pids) == 0 {
+		return fmt.Errorf("Failed to locate initd pid, the cgroup was empty")
+	}
+	sort.Ints(pids)
+
 	c.mutex.Lock()
 	c.initdClient = client
+	c.initdPid = pids[0]
 	c.mutex.Unlock()
 
 	c.log.Trace("Done starting stage 2.")
@@ -286,7 +357,7 @@ func (c *Container) startApp() error {
 		"app", cmdargs, workingDirectory, c.environment.Strings(),
 		"/app.stdout", "/app.stderr",
 		c.image.App.User, c.image.App.Group,
-		c.image.App.SupplementaryGIDs,
+		c.image.App.SupplementaryGIDs, c.capabilities,
 		time.Second*5)
 	if err != nil {
 		return err

@@ -60,12 +60,23 @@ type Container struct {
 	pod       *schema.PodManifest
 	uuid      string
 
+	// Linux capabilities which will be applied to any process started on the
+	// container. The capabiltiies are not applied to the initd, since it could
+	// hinder its operation. Instead, it is passed in with any start call.
+	capabilities string
+
+	// initdClient is the client object to talk to the initd process running
+	// within the container.
+	initdClient client3.Client
+
+	// initdPid is the PID of the initd process within the container
+	initdPid int
+
 	storage     graphstorage.PodStorage
 	cgroup      *cgroups.Cgroup
 	directory   string
 	environment *envmap.EnvMap
 
-	initdClient  client3.Client
 	shuttingDown bool
 	state        ContainerState
 	mutex        sync.Mutex
@@ -166,13 +177,14 @@ func (container *Container) ShortName() string {
 // easily stream in and out.
 func (c *Container) Enter(cmdline []string, stream *os.File) error {
 	launcher := &client2.Launcher{
-		Environment: c.environment.Strings(),
-		Taskfiles:   c.cgroup.TasksFiles(),
-		Stdin:       stream,
-		Stdout:      stream,
-		Stderr:      stream,
-		User:        c.image.App.User,
-		Group:       c.image.App.Group,
+		Environment:  c.environment.Strings(),
+		Taskfiles:    c.cgroup.TasksFiles(),
+		Stdin:        stream,
+		Stdout:       stream,
+		Stderr:       stream,
+		User:         c.image.App.User,
+		Group:        c.image.App.Group,
+		Capabilities: c.capabilities,
 	}
 
 	// If the command was blank, then use /bin/sh

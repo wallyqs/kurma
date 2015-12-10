@@ -15,6 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <sys/capability.h>
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/wait.h>
@@ -142,6 +144,21 @@ int gidforgroup(char *group) {
 	}
 
 	return -1;
+}
+
+// dropBoundingCapabilities is used to drop capabilities from the bound set that
+// are not specified in newcap. This is needed to ensure the capabilities are
+// applied properly when finalized.
+void dropBoundingCapabilities(cap_t newcap) {
+	cap_flag_value_t val;
+	cap_value_t i;
+	for (i = 0; i <= CAP_LAST_CAP; i++) {
+		if (cap_get_flag(newcap, i, CAP_EFFECTIVE, &val) != 0)
+			continue;
+		if (val == CAP_SET)
+			continue;
+		prctl(PR_CAPBSET_DROP, i, 0, 0, 0);
+	}
 }
 
 #endif

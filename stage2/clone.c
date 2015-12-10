@@ -14,6 +14,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <sys/capability.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -40,6 +42,7 @@ void spawn_child(clone_destination_data *args) {
 }
 
 static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
+	cap_t caps;
 	pid_t child;
 	int flags;
 	int pipe_fd[2];
@@ -171,6 +174,22 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 		// --------------------------------------------------------------------
 		// Step 11: Drop privledges down to the specified user
 		// --------------------------------------------------------------------
+
+		if (args->capabilities != NULL) {
+			caps = cap_from_text(args->capabilities);
+			if (caps == NULL)
+				error(1, errno, "Failed to call cap_from_text('%s')", args->capabilities);
+		} else {
+			caps = cap_get_proc();
+		}
+
+		// Keep the capabilities while we switch users, and drop ones that aren't
+		// needed from the bound set.
+		if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0)
+			error(1, errno, "Failed to call prctl(PR_SET_KEEPCAPS, 1)");
+		dropBoundingCapabilities(caps);
+
+		// Apply user/group.
 		if (args->group != NULL) {
 			int gid = gidforgroup(args->group);
 			if (gid < 0)
@@ -185,6 +204,13 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 			if (uid != 0 && setuid(uid) < 0)
 			  error(1, errno, "Failed to get switch to the specified user");
 		}
+
+		// Switch keeping capabilities back and apply the new caps
+		if (prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) < 0)
+			error(1, errno, "Failed to call prctl(PR_SET_KEEPCAPS, 0)");
+		if (cap_set_proc(caps) != 0)
+			error(1, errno, "Failed to call cap_set_proc()");
+		cap_free(caps);
 
 		// Signal to the parent that we're ready to exec and we're done with
 		// them. This is needed because if the parent exits any sooner, the proc

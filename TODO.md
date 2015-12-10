@@ -8,12 +8,12 @@
 - [ ] init: Add ability for arbitruary configuration to be passed to initial
   containers.
 - [ ] stage1: Implement hook calls
-- [ ] stage1: Implement appc isolators for capabilities
-- [ ] stage1: Implement appc isolators for cgroups
 - [ ] stage1: Add resource allocation
 - [ ] stage1: Re-enable user namespace functionality
 - [ ] Review Manager/Container lock handling
 - [ ] Metadata API support
+- [X] stage1: Implement appc isolators for capabilities
+- [X] stage1: Implement appc isolators for cgroups
 - [X] stage1: Move local API to use a unix socket rather than localhost.
 - [X] stage1: Support volumes
 - [X] Look at a futex for protecting concurrent pivot_root calls.

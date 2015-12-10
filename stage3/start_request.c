@@ -15,6 +15,8 @@
 #include <sysexits.h>
 #include <unistd.h>
 
+#include <sys/capability.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -30,6 +32,7 @@ void start_request(struct request *r)
 	gid_t gid;
 	gid_t	*supplementary_gids = NULL;
 	unsigned long int ul;
+	cap_t caps;
 
 	// The expected protocol for an start statement looks like this:
 	// {
@@ -40,13 +43,14 @@ void start_request(struct request *r)
 	//   { "<STDOUTFILE>", "<STDERRFILE>" },
 	//   { "<UID>", "<GID>" },
 	//   { ["supplementaryGids1", "supplementaryGids2", ...]},
+	//   { "<CAPABILITIES"> },
 	// }
 
 	INFO("[%d] START request.\n", r->fd);
 
 	// Protocol error conditions.
 	if (
-			(r->outer_len != 7) ||
+			(r->outer_len != 8) ||
 			// START/NAME
 			(r->data[0][1] != NULL && r->data[0][2] != NULL) ||
 			// COMMAND
@@ -63,8 +67,9 @@ void start_request(struct request *r)
 			(r->data[5][1] == NULL) ||
 			(r->data[5][2] != NULL) ||
 			// SUPPLEMENTARY GIDs (nullable)
+			// CAPABILITIES (nullable)
 			// END
-			(r->data[7] != NULL))
+			(r->data[8] != NULL))
 	{
 		ERROR("[%d] Protocol error.\n", r->fd);
 		initd_response_protocol_error(r);
@@ -112,6 +117,20 @@ void start_request(struct request *r)
 	}
 	int len_gids = i;
 
+	// Parse the capabilties, if they were provided
+	if (r->data[7] != NULL && r->data[7][0] != NULL && strcmp(r->data[7][0], "") != 0) {
+		ERROR("[%d] Value was: '%s'\n", r->fd, r->data[7][0]);
+		caps = cap_from_text(r->data[7][0]);
+		if (caps == NULL) {
+			ERROR("[%d] Failed to cap_from_text('%s'): %s\n", r->fd, r->data[7][0], strerror(errno));
+			initd_response_internal_error(r);
+			return;
+		}
+	} else {
+		ERROR("[%d] Value was blank\n", r->fd);
+		caps = cap_get_proc();
+	}
+
 	fflush(NULL);
 	pid = fork();
 	if (pid == -1) {
@@ -124,13 +143,28 @@ void start_request(struct request *r)
 		close_all_fds();
 		initd_setup_fds(r->data[4][0], r->data[4][1]);
 
-		if (setgroups(len_gids, supplementary_gids) != 0) { _exit(EX_OSERR); }
+		// Keep the capabilities while we switch users, and drop ones that aren't
+		// needed from the bound set.
+		if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0) { _exit(EX_OSERR); }
+		dropBoundingCapabilities2(caps);
 
-		// Change to the proper user..
+		// Change to the proper user and groups.
+		if (setgroups(len_gids, supplementary_gids) != 0) { _exit(EX_OSERR); }
 		if (setregid(gid, gid) != 0) { _exit(EX_OSERR); }
 		if (getgid() != gid) { _exit(EX_OSERR); }
 		if (setreuid(uid, uid) != 0) { _exit(EX_OSERR); }
 		if (getuid() != uid) { _exit(EX_OSERR); }
+
+		// Switch keeping capabilities back
+		if (prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) < 0) { _exit(EX_OSERR); }
+
+		// Set the capabilities
+		if (cap_set_proc(caps) != 0) {
+			ERROR("[%d] Failed to cap_set_proc(): %s\n", r->fd, strerror(errno));
+			initd_response_internal_error(r);
+			return;
+		}
+		cap_free(caps);
 
 		// chdir into the working directory
 		if (r->data[2][0] != NULL) {
