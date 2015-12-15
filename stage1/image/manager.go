@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/apcera/kurma/stage1/graphstorage"
+	"github.com/apcera/kurma/util/cgroups"
 	"github.com/apcera/logray"
 	"github.com/apcera/util/hashutil"
 	"github.com/apcera/util/tarhelper"
@@ -174,6 +175,16 @@ func (m *Manager) FindImage(name, version string) (string, *schema.ImageManifest
 	}
 
 	return "", nil
+}
+
+// GetImageSize will return the on disk size of the image.
+func (m *Manager) GetImageSize(hash string) (int64, error) {
+	path := filepath.Join(m.Options.Directory, hash)
+	if _, err := os.Stat(path); err != nil {
+		return 0, fmt.Errorf("failed to locate image path: %v", err)
+	}
+
+	return (*cgroups.Cgroup)(nil).DiskUsed(path)
 }
 
 // DeleteImage will remove the specified image hash from disk.

@@ -16,6 +16,7 @@ type Container struct {
 type Image struct {
 	Hash     string                `json:"hash"`
 	Manifest *schema.ImageManifest `json:"manifest"`
+	Size     int64                 `json:"size"`
 }
 
 type ContainerCreateRequest struct {
