@@ -60,6 +60,6 @@ func exportContainer(c *container.Container) *client.Container {
 		UUID:  c.UUID(),
 		Image: c.ImageManifest(),
 		Pod:   c.PodManifest(),
-		State: c.State().String(),
+		State: client.State(c.State().String()),
 	}
 }

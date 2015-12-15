@@ -10,7 +10,7 @@ type Container struct {
 	UUID  string                `json:"uuid"`
 	Image *schema.ImageManifest `json:"image"`
 	Pod   *schema.PodManifest   `json:"pod"`
-	State string                `json:"state"`
+	State State                 `json:"state"`
 }
 
 type Image struct {
@@ -46,3 +46,14 @@ type ImageResponse struct {
 }
 
 type None struct{}
+
+type State string
+
+const (
+	STATE_NEW      = State("NEW")
+	STATE_STARTING = State("STARTING")
+	STATE_RUNNING  = State("RUNNING")
+	STATE_STOPPING = State("STOPPING")
+	STATE_STOPPED  = State("STOPPED")
+	STATE_EXITED   = State("EXITED")
+)
