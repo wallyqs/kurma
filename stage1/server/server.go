@@ -70,6 +70,7 @@ func (s *Server) Start() error {
 
 	router := mux.NewRouter()
 	router.Handle("/rpc", svr)
+	router.HandleFunc("/info", s.infoRequest).Methods("GET")
 	router.HandleFunc("/containers/enter", s.containerEnterRequest).Methods("GET")
 	router.HandleFunc("/images/create", s.imageCreateRequest).Methods("POST")
 

@@ -18,6 +18,8 @@ import (
 )
 
 type Client interface {
+	Info() (*HostInfo, error)
+
 	CreateContainer(name, imageHash string, manifest *schema.ImageManifest) (*Container, error)
 	ListContainers() ([]*Container, error)
 	GetContainer(uuid string) (*Container, error)
@@ -72,6 +74,35 @@ func New(conn string) (Client, error) {
 	}
 
 	return c, nil
+}
+
+func (c *client) Info() (*HostInfo, error) {
+	u, err := url.Parse(c.baseUrl)
+	if err != nil {
+		return nil, err
+	}
+	u.Path = "/info"
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.HttpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("request failed with non-200 status: %s", resp.Status)
+	}
+
+	var hostInfo *HostInfo
+	if err := ejson.NewDecoder(resp.Body).Decode(&hostInfo); err != nil {
+		return nil, err
+	}
+	return hostInfo, nil
 }
 
 func (c *client) CreateContainer(name, imageHash string, manifest *schema.ImageManifest) (*Container, error) {
@@ -149,6 +180,7 @@ func (c *client) CreateImage(reader io.Reader) (*Image, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("request did not return a 201 Created status: %s", resp.Status)

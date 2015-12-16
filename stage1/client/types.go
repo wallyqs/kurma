@@ -4,6 +4,7 @@ package client
 
 import (
 	"github.com/appc/spec/schema"
+	"github.com/appc/spec/schema/types"
 )
 
 type Container struct {
@@ -58,3 +59,13 @@ const (
 	STATE_STOPPED  = State("STOPPED")
 	STATE_EXITED   = State("EXITED")
 )
+
+type HostInfo struct {
+	Hostname     string       `json:"hostname"`
+	Cpus         int          `json:"cpus"`
+	Memory       int64        `json:"memory"`
+	Platform     string       `json:"platform"`
+	Arch         string       `json:"arch"`
+	ACVersion    types.SemVer `json:"ac_version"`
+	KurmaVersion types.SemVer `json:"kurma_version"`
+}
