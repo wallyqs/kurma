@@ -47,7 +47,7 @@ func main() {
 		ContainerDirectory: filepath.Join(directory, "pods"),
 		VolumeDirectory:    filepath.Join(directory, "volumes"),
 		ParentCgroupName:   parentCgroupName,
-		RequiredNamespaces: []string{"ipc", "mount", "pid", "uts"},
+		RequiredNamespaces: []string{"mount", "pid"},
 	}
 	containerManager, err := container.NewManager(imageManager, mopts)
 	if err != nil {

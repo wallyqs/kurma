@@ -81,7 +81,7 @@ func (manager *Manager) Validate(imageManifest *schema.ImageManifest) error {
 	// If the namespaces isolator is specified, validate a minimum set of namespaces
 	if iso := imageManifest.App.Isolators.GetByName(kschema.LinuxNamespacesName); iso != nil {
 		if niso, ok := iso.Value().(*kschema.LinuxNamespaces); ok {
-			checks := map[string]func() bool{
+			checks := map[string]func() kschema.LinuxNamespaceValue{
 				"ipc":   niso.IPC,
 				"mount": niso.Mount,
 				"net":   niso.Net,
@@ -94,9 +94,8 @@ func (manager *Manager) Validate(imageManifest *schema.ImageManifest) error {
 				if !exists {
 					return fmt.Errorf("Internal server error")
 				}
-				if !f() {
-					return fmt.Errorf("the manifest %s isolator must require the %s namespace",
-						kschema.LinuxNamespacesName, ns)
+				if f() == kschema.LinuxNamespaceHost {
+					return fmt.Errorf("the manifest %s isolator must require the %s namespace", kschema.LinuxNamespacesName, ns)
 				}
 			}
 		}

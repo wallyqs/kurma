@@ -26,22 +26,24 @@ func init() {
 
 func newLinuxNamespace() types.IsolatorValue {
 	return &LinuxNamespaces{
-		ns: make(map[string]bool),
+		ns: make(map[string]LinuxNamespaceValue),
 	}
 }
 
+type LinuxNamespaceValue string
+
+const (
+	LinuxNamespaceDefault = LinuxNamespaceValue("")
+	LinuxNamespaceHost    = LinuxNamespaceValue("host")
+)
+
 type LinuxNamespaces struct {
-	ns map[string]bool
+	ns map[string]LinuxNamespaceValue
 }
 
 func (n *LinuxNamespaces) UnmarshalJSON(b []byte) error {
-	var namespaces []string
-	if err := json.Unmarshal(b, &namespaces); err != nil {
+	if err := json.Unmarshal(b, &n.ns); err != nil {
 		return err
-	}
-
-	for _, namespace := range namespaces {
-		n.ns[namespace] = true
 	}
 	return nil
 }
@@ -57,26 +59,26 @@ func (n *LinuxNamespaces) AssertValid() error {
 	return nil
 }
 
-func (n *LinuxNamespaces) IPC() bool {
+func (n *LinuxNamespaces) IPC() LinuxNamespaceValue {
 	return n.ns[nsIPC]
 }
 
-func (n *LinuxNamespaces) Mount() bool {
+func (n *LinuxNamespaces) Mount() LinuxNamespaceValue {
 	return n.ns[nsMount]
 }
 
-func (n *LinuxNamespaces) Net() bool {
+func (n *LinuxNamespaces) Net() LinuxNamespaceValue {
 	return n.ns[nsNet]
 }
 
-func (n *LinuxNamespaces) PID() bool {
+func (n *LinuxNamespaces) PID() LinuxNamespaceValue {
 	return n.ns[nsPID]
 }
 
-func (n *LinuxNamespaces) User() bool {
+func (n *LinuxNamespaces) User() LinuxNamespaceValue {
 	return n.ns[nsUser]
 }
 
-func (n *LinuxNamespaces) UTS() bool {
+func (n *LinuxNamespaces) UTS() LinuxNamespaceValue {
 	return n.ns[nsUTS]
 }

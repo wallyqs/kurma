@@ -109,19 +109,28 @@ func (c *client) CreateContainer(name, imageHash string, manifest *schema.ImageM
 	req := &ContainerCreateRequest{Name: name, ImageHash: imageHash, Image: manifest}
 	var resp *ContainerResponse
 	err := c.execute("Containers.Create", req, &resp)
-	return resp.Container, err
+	if err != nil {
+		return nil, err
+	}
+	return resp.Container, nil
 }
 
 func (c *client) ListContainers() ([]*Container, error) {
 	var resp *ContainerListResponse
 	err := c.execute("Containers.List", nil, &resp)
-	return resp.Containers, err
+	if err != nil {
+		return nil, err
+	}
+	return resp.Containers, nil
 }
 
 func (c *client) GetContainer(uuid string) (*Container, error) {
 	var resp *ContainerResponse
 	err := c.execute("Containers.Get", uuid, &resp)
-	return resp.Container, err
+	if err != nil {
+		return nil, err
+	}
+	return resp.Container, nil
 }
 
 func (c *client) DestroyContainer(uuid string) error {
@@ -196,13 +205,19 @@ func (c *client) CreateImage(reader io.Reader) (*Image, error) {
 func (c *client) ListImages() ([]*Image, error) {
 	var resp *ImageListResponse
 	err := c.execute("Images.List", nil, &resp)
-	return resp.Images, err
+	if err != nil {
+		return nil, err
+	}
+	return resp.Images, nil
 }
 
 func (c *client) GetImage(hash string) (*Image, error) {
 	var resp *ImageResponse
 	err := c.execute("Images.Get", hash, &resp)
-	return resp.Image, err
+	if err != nil {
+		return nil, err
+	}
+	return resp.Image, nil
 }
 
 func (c *client) DeleteImage(hash string) error {

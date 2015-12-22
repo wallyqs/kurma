@@ -20,21 +20,25 @@ func (c *Container) setupLinuxNamespaceIsolator(launcher *client.Launcher) error
 	nsisolators := false
 	if iso := c.image.App.Isolators.GetByName(kschema.LinuxNamespacesName); iso != nil {
 		if niso, ok := iso.Value().(*kschema.LinuxNamespaces); ok {
-			launcher.NewIPCNamespace = niso.IPC()
-			launcher.NewNetworkNamespace = niso.Net()
-			launcher.NewPIDNamespace = niso.PID()
-			launcher.NewUserNamespace = niso.User()
-			launcher.NewUTSNamespace = niso.UTS()
+			launcher.NewIPCNamespace = needNewNamespace(niso.IPC())
+			launcher.NewNetworkNamespace = needNewNamespace(niso.Net())
+			launcher.NewPIDNamespace = needNewNamespace(niso.PID())
+			// FIXME uncomment once user namespaces enabled, should key off some
+			// configured default
+			// launcher.NewUserNamespace = needNewNamespace(niso.User())
+			launcher.NewUTSNamespace = needNewNamespace(niso.UTS())
 			nsisolators = true
 			c.pod.Isolators = append(c.pod.Isolators, *iso)
 		}
 	}
+
 	if !nsisolators {
 		// set some defaults if no namespace isolator was given
 		launcher.NewIPCNamespace = true
 		launcher.NewPIDNamespace = true
 		launcher.NewUTSNamespace = true
 	}
+
 	return nil
 }
 
@@ -159,4 +163,13 @@ func (c *Container) setupHostApiAccessIsolator(launcher *client.Launcher) error 
 	}
 
 	return nil
+}
+
+// needNewNamespace returns whether or not a new namespace is needed on the
+// launcher object based on the LinuxNamespaceValue.
+func needNewNamespace(val kschema.LinuxNamespaceValue) bool {
+	if val == kschema.LinuxNamespaceHost {
+		return false
+	}
+	return true
 }
