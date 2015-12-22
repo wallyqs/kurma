@@ -29,6 +29,11 @@ func RetrieveImage(imageUri string, insecure bool) (tempfile.ReadSeekCloser, err
 		return nil, err
 	}
 
+	insecureOption := discovery.InsecureNone
+	if insecure {
+		insecureOption = discovery.InsecureHttp
+	}
+
 	switch u.Scheme {
 	case "file":
 		// for file:// urls, just load the file and return it
@@ -56,7 +61,7 @@ func RetrieveImage(imageUri string, insecure bool) (tempfile.ReadSeekCloser, err
 			return nil, err
 		}
 
-		endpoints, _, err := discovery.DiscoverEndpoints(*app, nil, insecure)
+		endpoints, _, err := discovery.DiscoverEndpoints(*app, nil, insecureOption)
 		if err != nil {
 			return nil, err
 		}
