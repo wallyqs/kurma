@@ -137,7 +137,6 @@ int flags_for_clone(clone_destination_data *args) {
 	if (args->new_ipc_namespace) { flags |= CLONE_NEWIPC; }
 	if (args->new_network_namespace) { flags |= CLONE_NEWNET; }
 	if (args->new_mount_namespace) { flags |= CLONE_NEWNS; }
-	if (args->new_pid_namespace) { flags |= CLONE_NEWPID; }
 	if (args->new_uts_namespace) { flags |= CLONE_NEWUTS; }
 	if (args->new_user_namespace) { flags |= CLONE_NEWUSER; }
 	return flags;

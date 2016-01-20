@@ -144,7 +144,20 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 	}
 
 	// --------------------------------------------------------------------
-	// Step 10: Prepare for the final fork.
+	// Step 10: Create the pid namespace. This is done separate from the other
+	// namespaces because the first fork call after creating the pid namespace is
+	// what process becomes pid 1. Since part of setting up the user namespace
+	// includes forking, the pid namespace unshare separate and kept close to the
+	// fork call.
+	// --------------------------------------------------------------------
+
+	if (args->new_pid_namespace) {
+		if (unshare(CLONE_NEWPID) < 0)
+			error(1, 0, "Failed to unshare pid namespace");
+	}
+
+	// --------------------------------------------------------------------
+	// Step 11: Prepare for the final fork.
 	// --------------------------------------------------------------------
 
 	// Only create the pipe if we're going to detach. The flags are used to
@@ -172,7 +185,7 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 		}
 
 		// --------------------------------------------------------------------
-		// Step 11: Drop privledges down to the specified user
+		// Step 12: Drop privledges down to the specified user
 		// --------------------------------------------------------------------
 
 		if (args->capabilities != NULL) {
@@ -221,7 +234,7 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 		}
 
 		// --------------------------------------------------------------------
-		// Step 12: Remove all existing environment variables. Set
+		// Step 13: Remove all existing environment variables. Set
 		// umask to a sane fixed value so IM's umask won't affect the
 		// container.
 		// --------------------------------------------------------------------
@@ -229,7 +242,7 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 		umask(022);
 
 		// --------------------------------------------------------------------
-		// Step 13: Actually perform the exec at this point.
+		// Step 14: Actually perform the exec at this point.
 		// --------------------------------------------------------------------
 
 		DEBUG("Exec %s\n", args->command);
@@ -238,7 +251,7 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 	}
 
 	// --------------------------------------------------------------------
-	// Step 14: End handling for the parent thread.
+	// Step 15: End handling for the parent thread.
 	// --------------------------------------------------------------------
 
 	// determine if we need to detach or wait for the process to finish
