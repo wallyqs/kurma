@@ -53,6 +53,11 @@ void createroot(char *src, char *dst, bool privileged) {
 
 	mask = umask(0);
 
+	// Convert the root mount into a private mount. This will ensures going
+	// forward, all changes are private.
+	if (mount("none", "/", NULL, MS_REC | MS_PRIVATE, NULL) < 0)
+		error(1, errno, "Failed to convert new mount namespace to be private");
+
 	// Create /tmp since this is typically where the container's bind location
 	// will be, and helps with making SSH work for Continuum capsules.
 	mkdir("/tmp", 0755);
