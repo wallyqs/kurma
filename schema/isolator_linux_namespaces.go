@@ -12,12 +12,11 @@ import (
 const (
 	LinuxNamespacesName = "os/linux/namespaces"
 
-	nsIPC   = "ipc"
-	nsMount = "mount"
-	nsNet   = "net"
-	nsPID   = "pid"
-	nsUser  = "user"
-	nsUTS   = "uts"
+	nsIPC  = "ipc"
+	nsNet  = "net"
+	nsPID  = "pid"
+	nsUser = "user"
+	nsUTS  = "uts"
 )
 
 func init() {
@@ -51,7 +50,7 @@ func (n *LinuxNamespaces) UnmarshalJSON(b []byte) error {
 func (n *LinuxNamespaces) AssertValid() error {
 	for k, _ := range n.ns {
 		switch k {
-		case nsIPC, nsMount, nsNet, nsPID, nsUser, nsUTS:
+		case nsIPC, nsNet, nsPID, nsUser, nsUTS:
 		default:
 			return fmt.Errorf("unrecognized namespace %q", k)
 		}
@@ -61,10 +60,6 @@ func (n *LinuxNamespaces) AssertValid() error {
 
 func (n *LinuxNamespaces) IPC() LinuxNamespaceValue {
 	return n.ns[nsIPC]
-}
-
-func (n *LinuxNamespaces) Mount() LinuxNamespaceValue {
-	return n.ns[nsMount]
 }
 
 func (n *LinuxNamespaces) Net() LinuxNamespaceValue {

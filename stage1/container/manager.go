@@ -82,12 +82,11 @@ func (manager *Manager) Validate(imageManifest *schema.ImageManifest) error {
 	if iso := imageManifest.App.Isolators.GetByName(kschema.LinuxNamespacesName); iso != nil {
 		if niso, ok := iso.Value().(*kschema.LinuxNamespaces); ok {
 			checks := map[string]func() kschema.LinuxNamespaceValue{
-				"ipc":   niso.IPC,
-				"mount": niso.Mount,
-				"net":   niso.Net,
-				"pid":   niso.PID,
-				"user":  niso.User,
-				"uts":   niso.UTS,
+				"ipc":  niso.IPC,
+				"net":  niso.Net,
+				"pid":  niso.PID,
+				"user": niso.User,
+				"uts":  niso.UTS,
 			}
 			for _, ns := range manager.Options.RequiredNamespaces {
 				f, exists := checks[ns]
