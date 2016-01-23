@@ -53,16 +53,17 @@ void createroot(char *src, char *dst, bool privileged) {
 
 	mask = umask(0);
 
-	// Convert the root mount into a private mount. This will ensures going
-	// forward, all changes are private.
+	// Convert the root mount into a private mount. This ensures that if the
+	// host's root partion was shared, we'll ensure it is private so no mount
+	// changes in the new namespace will propagate.
 	if (mount("none", "/", NULL, MS_REC | MS_PRIVATE, NULL) < 0)
 		error(1, errno, "Failed to convert new mount namespace to be private");
 
-	// Create /tmp since this is typically where the container's bind location
-	// will be, and helps with making SSH work for Continuum capsules.
+	// Create /tmp within the new mount namespace. This ensures the bind directory
+	// is isolated from the host's filesystem.
 	mkdir("/tmp", 0755);
 	if (mount("tmpfs", "/tmp", "tmpfs", 0, "mode=0755") < 0)
-	  error(1, errno, "Failed to mount /tmp tmpfs in parent filesystem");
+		error(1, errno, "Failed to mount /tmp tmpfs in parent filesystem");
 
 	// Typically the dst is passed in, however fall back on handling to create a
 	// tmpdir and clean it up. This is primarily for localized testing of the
