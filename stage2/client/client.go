@@ -211,7 +211,7 @@ func (l *Launcher) generateArgs(cmdargs []string) ([]string, []*os.File) {
 	extraFiles = append(extraFiles, l.Stdin)
 
 	if l.Stdout != nil {
-		args = append(args, "--stdinfd", fmt.Sprintf("%d", len(extraFiles)+3))
+		args = append(args, "--stdoutfd", fmt.Sprintf("%d", len(extraFiles)+3))
 		extraFiles = append(extraFiles, l.Stdout)
 	}
 	if l.Stderr != nil {
