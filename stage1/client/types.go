@@ -61,11 +61,12 @@ const (
 )
 
 type HostInfo struct {
-	Hostname     string       `json:"hostname"`
-	Cpus         int          `json:"cpus"`
-	Memory       int64        `json:"memory"`
-	Platform     string       `json:"platform"`
-	Arch         string       `json:"arch"`
-	ACVersion    types.SemVer `json:"ac_version"`
-	KurmaVersion types.SemVer `json:"kurma_version"`
+	Hostname      string       `json:"hostname"`
+	Cpus          int          `json:"cpus"`
+	Memory        int64        `json:"memory"`
+	Platform      string       `json:"platform"`
+	Arch          string       `json:"arch"`
+	ACVersion     types.SemVer `json:"ac_version"`
+	KurmaVersion  types.SemVer `json:"kurma_version"`
+	KernelVersion string       `json:"kernel_version"`
 }

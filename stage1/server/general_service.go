@@ -17,11 +17,12 @@ import (
 
 func (s *Server) infoRequest(w http.ResponseWriter, req *http.Request) {
 	hostInfo := &client.HostInfo{
-		Cpus:         runtime.NumCPU(),
-		Platform:     runtime.GOOS,
-		Arch:         runtime.GOARCH,
-		ACVersion:    schema.AppContainerVersion,
-		KurmaVersion: client.KurmaVersion,
+		Cpus:          runtime.NumCPU(),
+		Platform:      runtime.GOOS,
+		Arch:          runtime.GOARCH,
+		ACVersion:     schema.AppContainerVersion,
+		KurmaVersion:  client.KurmaVersion,
+		KernelVersion: getKernelVersion(),
 	}
 
 	hostname, err := os.Hostname()
