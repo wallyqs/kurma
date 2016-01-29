@@ -1,4 +1,4 @@
-// Copyright 2015 Apcera Inc. All rights reserved.
+// Copyright 2015-2016 Apcera Inc. All rights reserved.
 
 package image
 
@@ -203,15 +203,9 @@ func (m *Manager) DeleteImage(hash string) error {
 // all of the dependencies and launch a unionfs mount in a new mount namespace
 // in the PodStorage.
 func (m *Manager) ProvisionPod(hash, podDirectory string) (graphstorage.PodStorage, error) {
-	// loop up the top level manifest
-	manifest := m.GetImage(hash)
-	if manifest == nil {
-		return nil, fmt.Errorf("unable to locate hash %q", hash)
-	}
-
 	// resolve the tree
-	layers := []string{hash}
-	if err := m.processDependencies(manifest, layers); err != nil {
+	layers, err := m.processLayers(hash)
+	if err != nil {
 		return nil, err
 	}
 
@@ -222,24 +216,6 @@ func (m *Manager) ProvisionPod(hash, podDirectory string) (graphstorage.PodStora
 
 	// generate the pod storage
 	return m.provisioner.Create(podDirectory, layers)
-}
-
-// processDependencies will look the dependencies on the specified image
-// manifest and append the image hashes to the list of layers.
-func (m *Manager) processDependencies(manifest *schema.ImageManifest, layers []string) error {
-	for _, dep := range manifest.Dependencies {
-		depmanifest := m.GetImage(dep.ImageID.String())
-		if depmanifest == nil {
-			version, _ := dep.Labels.Get("version")
-			return fmt.Errorf("failed to locate dependent image %s:%s", dep.ImageName.String(), version)
-		}
-
-		layers = append(layers, dep.ImageID.String())
-		if err := m.processDependencies(depmanifest, layers); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // loadFile will populate the manager's manifest data with the image directory
