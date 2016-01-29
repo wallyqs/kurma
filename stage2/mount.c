@@ -45,6 +45,14 @@ void bindnode(char *src, char *dst) {
 		error(1, errno, "Failed to bind %s into new %s filesystem", src, dst);
 }
 
+void privatize_namespace() {
+	// Convert the root mount into a private mount. This ensures that if the
+	// host's root partion was shared, we'll ensure it is private so no mount
+	// changes in the new namespace will propagate.
+	if (mount("none", "/", NULL, MS_REC | MS_PRIVATE, NULL) < 0)
+		error(1, errno, "Failed to convert new mount namespace to be private");
+}
+
 void createroot(char *src, char *dst, bool privileged) {
 	mode_t mask;
 	pid_t child;
@@ -52,12 +60,6 @@ void createroot(char *src, char *dst, bool privileged) {
 	int console;
 
 	mask = umask(0);
-
-	// Convert the root mount into a private mount. This ensures that if the
-	// host's root partion was shared, we'll ensure it is private so no mount
-	// changes in the new namespace will propagate.
-	if (mount("none", "/", NULL, MS_REC | MS_PRIVATE, NULL) < 0)
-		error(1, errno, "Failed to convert new mount namespace to be private");
 
 	// Create /tmp within the new mount namespace. This ensures the bind directory
 	// is isolated from the host's filesystem.

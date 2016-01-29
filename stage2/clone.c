@@ -119,6 +119,9 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 	flags = flags_for_clone(args);
 	if (unshare(flags) < 0)
 		error(1, errno, "Failed to unshare namespaces");
+	if(args->new_mount_namespace) {
+		privatize_namespace();
+	}
 
 	// --------------------------------------------------------------------
 	// Step 8: Ensure the uid_map and gid_map files are written.

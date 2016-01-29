@@ -126,6 +126,7 @@ int flags_for_clone(clone_destination_data *args);
 
 // mount.c
 char *tmpdir(void);
+void privatize_namespace();
 void createroot(char *src, char *dst, bool privileged);
 void enterroot();
 void mountproc(void);
