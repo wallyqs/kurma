@@ -1,4 +1,4 @@
-// Copyright 2015 Apcera Inc. All rights reserved.
+// Copyright 2015-2016 Apcera Inc. All rights reserved.
 
 package init
 
@@ -21,6 +21,7 @@ var (
 		(*runner).mountDisks,
 		(*runner).cleanOldPods,
 		(*runner).rescanImages,
+		(*runner).loadAvailableImages,
 		(*runner).configureHostname,
 		(*runner).configureNetwork,
 		(*runner).markBootSuccessful,

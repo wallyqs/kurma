@@ -1,4 +1,4 @@
-// Copyright 2015 Apcera Inc. All rights reserved.
+// Copyright 2015-2016 Apcera Inc. All rights reserved.
 
 package aciremote
 
@@ -8,8 +8,11 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/apcera/kurma/stage1/image"
 	"github.com/apcera/util/tempfile"
 	"github.com/appc/spec/discovery"
+	"github.com/appc/spec/schema"
+	"github.com/appc/spec/schema/types"
 )
 
 var (
@@ -79,4 +82,38 @@ func RetrieveImage(imageUri string, insecure bool) (tempfile.ReadSeekCloser, err
 	default:
 		return nil, fmt.Errorf("%q scheme not supported", u.Scheme)
 	}
+}
+
+// LoadImage is used to retrieve the specified imageUri and load it into the
+// Image Manager, returning the hash, manifest, or an error on failure. In the
+// case of AppC discovery format, it will check to see if the image already
+// exists before retrieving.
+func LoadImage(imageUri string, insecure bool, imageManager *image.Manager) (string, *schema.ImageManifest, error) {
+	u, err := url.Parse(imageUri)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Currently only supports loading from existing on AppC discovery format
+	switch u.Scheme {
+	case "":
+		app, err := discovery.NewAppFromString(imageUri)
+		if err != nil {
+			return "", nil, err
+		}
+
+		version := app.Labels[types.ACIdentifier("version")]
+		hash, manifest := imageManager.FindImage(app.Name.String(), version)
+		if hash != "" {
+			return hash, manifest, nil
+		}
+	}
+
+	f, err := RetrieveImage(imageUri, insecure)
+	if err != nil {
+		return "", nil, err
+	}
+	defer f.Close()
+
+	return imageManager.CreateImage(f)
 }

@@ -1,4 +1,4 @@
-// Copyright 2015 Apcera Inc. All rights reserved.
+// Copyright 2015-2016 Apcera Inc. All rights reserved.
 
 package init
 
@@ -351,12 +351,47 @@ func (r *runner) mountDisks() error {
 	return nil
 }
 
-// rescanForImages will recheck for any images now that the disks have been
+// rescanImages will recheck for any images now that the disks have been
 // mounted.
 func (r *runner) rescanImages() error {
 	if err := r.imageManager.Rescan(); err != nil {
 		return fmt.Errorf("Failed to scan for existing container images: %v", err)
 	}
+	return nil
+}
+
+// loadAvailableImages will import all the available images into the Image
+// Manager.
+func (r *runner) loadAvailableImages() error {
+	files, err := ioutil.ReadDir("/acis")
+	if err != nil {
+		return fmt.Errorf("Failed to read available ACI images: %v", err)
+	}
+
+	for _, fi := range files {
+		if filepath.Ext(fi.Name()) != ".aci" {
+			continue
+		}
+
+		err := func(name string) error {
+			f, err := os.Open(name)
+			if err != nil {
+				return err
+			}
+			defer os.Remove(name)
+			defer f.Close()
+
+			_, _, err = r.imageManager.CreateImage(f)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(filepath.Join("/acis", fi.Name()))
+		if err != nil {
+			r.log.Warnf("Failed to import image %q: %v", fi.Name(), err)
+		}
+	}
+
 	return nil
 }
 
@@ -631,17 +666,9 @@ func (r *runner) startServer() error {
 func (r *runner) startInitContainers() error {
 	for _, img := range r.config.InitContainers {
 		func() {
-			f, err := aciremote.RetrieveImage(img, true)
+			hash, manifest, err := aciremote.LoadImage(img, true, r.imageManager)
 			if err != nil {
-				r.log.Errorf("Failed to retrieve image %q: %v", img, err)
-				return
-			}
-			defer removeIfFile(img)
-			defer f.Close()
-
-			hash, manifest, err := r.imageManager.CreateImage(f)
-			if err != nil {
-				r.log.Warnf("Failed to load image %s: %v", manifest.Name.String(), err)
+				r.log.Warnf("Failed to load image %q: %v", img, err)
 				return
 			}
 
@@ -662,19 +689,11 @@ func (r *runner) startUdev() error {
 		return nil
 	}
 
-	f, err := aciremote.RetrieveImage(r.config.Services.Udev.ACI, true)
-	if err != nil {
-		r.log.Errorf("Failed to retrieve udev image: %v", err)
-		return nil
-	}
-	defer removeIfFile(r.config.Services.Udev.ACI)
-	defer f.Close()
-
 	// FIXME make this configurable on the container somehow
 	r.manager.SwapDirectory(systemContainersPath, func() {
-		hash, manifest, err := r.imageManager.CreateImage(f)
+		hash, manifest, err := aciremote.LoadImage(r.config.Services.Udev.ACI, true, r.imageManager)
 		if err != nil {
-			r.log.Warnf("Failed to load image %s: %v", manifest.Name.String(), err)
+			r.log.Warnf("Failed to load udev image: %v", err)
 			return
 		}
 
@@ -699,17 +718,9 @@ func (r *runner) startNTP() error {
 
 	r.log.Info("Updating system clock via NTP...")
 
-	f, err := aciremote.RetrieveImage(r.config.Services.NTP.ACI, true)
+	hash, manifest, err := aciremote.LoadImage(r.config.Services.NTP.ACI, true, r.imageManager)
 	if err != nil {
-		r.log.Errorf("Failed to retrieve NTP image: %v", err)
-		return nil
-	}
-	defer removeIfFile(r.config.Services.NTP.ACI)
-	defer f.Close()
-
-	hash, manifest, err := r.imageManager.CreateImage(f)
-	if err != nil {
-		r.log.Warnf("Failed to load image %s: %v", manifest.Name.String(), err)
+		r.log.Warnf("Failed to load NTP image: %v", err)
 		return nil
 	}
 
@@ -732,17 +743,9 @@ func (r *runner) startConsole() error {
 		return nil
 	}
 
-	f, err := aciremote.RetrieveImage(r.config.Services.Console.ACI, true)
+	hash, manifest, err := aciremote.LoadImage(r.config.Services.Console.ACI, true, r.imageManager)
 	if err != nil {
-		r.log.Errorf("Failed to retrieve console image: %v", err)
-		return nil
-	}
-	defer removeIfFile(r.config.Services.Console.ACI)
-	defer f.Close()
-
-	hash, manifest, err := r.imageManager.CreateImage(f)
-	if err != nil {
-		r.log.Warnf("Failed to load image %s: %v", manifest.Name.String(), err)
+		r.log.Warnf("Failed to load console image: %v", err)
 		return nil
 	}
 

@@ -146,6 +146,8 @@ func (m *Manager) CreateImage(reader io.Reader) (string, *schema.ImageManifest, 
 	return hash, manifest, nil
 }
 
+// ListImages returns a map of the image hash to image manifest for all images
+// that are available.
 func (m *Manager) ListImages() map[string]*schema.ImageManifest {
 	m.imagesLock.RLock()
 	defer m.imagesLock.RUnlock()
@@ -169,7 +171,9 @@ func (m *Manager) FindImage(name, version string) (string, *schema.ImageManifest
 		if manifest.Name.String() != name {
 			continue
 		}
-		if v, _ := manifest.Labels.Get("version"); v == version {
+
+		v, _ := manifest.Labels.Get("version")
+		if v == version || version == "" {
 			return hash, manifest
 		}
 	}
