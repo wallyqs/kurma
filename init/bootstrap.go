@@ -630,12 +630,12 @@ func (r *runner) markBootSuccessful() error {
 	out, err := exec.Command("/bin/cgpt", "add", rawdev, "-i", partnum, "-S1", "-T0").CombinedOutput()
 	if err != nil {
 		r.log.Warnf("Failed to mark boot successful: %s", string(out))
-		return err
+		return nil
 	}
 	out, err = exec.Command("/bin/cgpt", "prioritize", rawdev, "-i", partnum).CombinedOutput()
 	if err != nil {
 		r.log.Warnf("Failed to prioritize boot device: %s", string(out))
-		return err
+		return nil
 	}
 	return nil
 }
