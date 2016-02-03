@@ -34,11 +34,9 @@ func cmdEnter(cmd *cobra.Command, args []string) {
 	// Set the local terminal in raw mode to turn off buffering and local
 	// echo. Also defers setting it back to normal for when the call is done.
 	termios, err := raw.MakeRaw(os.Stdin.Fd())
-	if err != nil {
-		fmt.Printf("Failed to configure local terminal: %v\n", err)
-		os.Exit(1)
+	if err == nil {
+		defer raw.TcSetAttr(os.Stdin.Fd(), termios)
 	}
-	defer raw.TcSetAttr(os.Stdin.Fd(), termios)
 
 	// Initialize the reader/writer
 	conn, err := cli.GetClient().EnterContainer(args[0], args[1:]...)
@@ -47,7 +45,10 @@ func cmdEnter(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	go io.Copy(conn, os.Stdin)
+	go func() {
+		io.Copy(conn, os.Stdin)
+		conn.Write([]byte{4}) // write EOT
+	}()
 	io.Copy(os.Stdout, conn)
 	conn.Close()
 }
