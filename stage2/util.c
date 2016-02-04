@@ -1,4 +1,4 @@
-// Copyright 2014-2015 Apcera Inc. All rights reserved.
+// Copyright 2014-2016 Apcera Inc. All rights reserved.
 
 #ifndef INITD_SPAWNER_UTIL_C
 #define INITD_SPAWNER_UTIL_C
@@ -80,9 +80,9 @@ void writemap(pid_t pid, char *type, char *map) {
 
 	path = string("/proc/%d/%s_map", pid, type);
 	if ((fd = open(path, O_WRONLY)) < 0)
-		error(1, 0, "Failed to set container %s map", type);
+		error(1, errno, "Failed to set container %s map", type);
 	else if (write(fd, map, strlen(map)) != (ssize_t) strlen(map))
-		error(1, 0, "Failed to set container %s map", type);
+		error(1, errno, "Failed to set container %s map", type);
 	free(path);
 }
 

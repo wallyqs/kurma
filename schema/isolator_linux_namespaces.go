@@ -20,10 +20,10 @@ const (
 )
 
 func init() {
-	types.AddIsolatorValueConstructor(LinuxNamespacesName, newLinuxNamespace)
+	types.AddIsolatorValueConstructor(LinuxNamespacesName, NewLinuxNamespace)
 }
 
-func newLinuxNamespace() types.IsolatorValue {
+func NewLinuxNamespace() types.IsolatorValue {
 	return &LinuxNamespaces{
 		ns: make(map[string]LinuxNamespaceValue),
 	}
@@ -45,6 +45,10 @@ func (n *LinuxNamespaces) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	return nil
+}
+
+func (n *LinuxNamespaces) MarshalJSON() ([]byte, error) {
+	return json.Marshal(n.ns)
 }
 
 func (n *LinuxNamespaces) AssertValid() error {
@@ -76,4 +80,24 @@ func (n *LinuxNamespaces) User() LinuxNamespaceValue {
 
 func (n *LinuxNamespaces) UTS() LinuxNamespaceValue {
 	return n.ns[nsUTS]
+}
+
+func (n *LinuxNamespaces) SetIPC(val LinuxNamespaceValue) {
+	n.ns[nsIPC] = val
+}
+
+func (n *LinuxNamespaces) SetNet(val LinuxNamespaceValue) {
+	n.ns[nsNet] = val
+}
+
+func (n *LinuxNamespaces) SetPID(val LinuxNamespaceValue) {
+	n.ns[nsPID] = val
+}
+
+func (n *LinuxNamespaces) SetUser(val LinuxNamespaceValue) {
+	n.ns[nsUser] = val
+}
+
+func (n *LinuxNamespaces) SetUTS(val LinuxNamespaceValue) {
+	n.ns[nsUTS] = val
 }

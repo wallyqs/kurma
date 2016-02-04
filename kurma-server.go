@@ -48,7 +48,7 @@ func main() {
 		VolumeDirectory:    filepath.Join(directory, "volumes"),
 		ParentCgroupName:   parentCgroupName,
 	}
-	containerManager, err := container.NewManager(imageManager, mopts)
+	containerManager, err := container.NewManager(imageManager, nil, mopts)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create the container manager: %v", err))
 	}

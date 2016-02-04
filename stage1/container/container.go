@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	kschema "github.com/apcera/kurma/schema"
+	"github.com/apcera/kurma/stage1"
 	"github.com/apcera/kurma/stage1/graphstorage"
 	client2 "github.com/apcera/kurma/stage2/client"
 	client3 "github.com/apcera/kurma/stage3/client"
@@ -19,36 +20,6 @@ import (
 	_ "github.com/apcera/kurma/schema"
 )
 
-type ContainerState int
-
-const (
-	NEW = ContainerState(iota)
-	STARTING
-	RUNNING
-	STOPPING
-	STOPPED
-	EXITED
-)
-
-func (c ContainerState) String() string {
-	switch c {
-	case NEW:
-		return "NEW"
-	case STARTING:
-		return "STARTING"
-	case RUNNING:
-		return "RUNNING"
-	case STOPPING:
-		return "STOPPING"
-	case STOPPED:
-		return "STOPPED"
-	case EXITED:
-		return "EXITED"
-	default:
-		return ""
-	}
-}
-
 // Container represents the operation and management of an individual container
 // on the current system.
 type Container struct {
@@ -57,7 +28,7 @@ type Container struct {
 
 	image     *schema.ImageManifest
 	imageHash string
-	pod       *schema.PodManifest
+	pod       *kschema.PodManifest
 	uuid      string
 
 	// Linux capabilities which will be applied to any process started on the
@@ -72,20 +43,25 @@ type Container struct {
 	// initdPid is the PID of the initd process within the container
 	initdPid int
 
+	// skipNetworking is used when a container is not creating its own network
+	// namespace. This happens when it is sharing the host's namespace or the
+	// namespace of another container.
+	skipNetworking bool
+
 	storage     graphstorage.PodStorage
 	cgroup      *cgroups.Cgroup
 	directory   string
 	environment *envmap.EnvMap
 
 	shuttingDown bool
-	state        ContainerState
+	state        stage1.ContainerState
 	mutex        sync.Mutex
 	waitch       chan bool
 }
 
 // PodManifest returns the current pod manifest for the App Container
 // Specification.
-func (container *Container) PodManifest() *schema.PodManifest {
+func (container *Container) PodManifest() *kschema.PodManifest {
 	return container.pod
 }
 
@@ -95,8 +71,21 @@ func (container *Container) ImageManifest() *schema.ImageManifest {
 	return container.image
 }
 
+// Pid returns the pid of the top level process withint he container.
+func (container *Container) Pid() (int, error) {
+	// Get a process from the container and copy its namespaces
+	tasks, err := container.cgroup.Tasks()
+	if err != nil {
+		return 0, err
+	}
+	if len(tasks) == 0 {
+		return 0, fmt.Errorf("no processes are running inside the container")
+	}
+	return tasks[0], nil
+}
+
 // State returns the current operating state of the container.
-func (container *Container) State() ContainerState {
+func (container *Container) State() stage1.ContainerState {
 	container.mutex.Lock()
 	defer container.mutex.Unlock()
 	return container.state
@@ -114,7 +103,7 @@ func (container *Container) isShuttingDown() bool {
 // the container.
 func (container *Container) start() {
 	container.mutex.Lock()
-	container.state = STARTING
+	container.state = stage1.STARTING
 	container.mutex.Unlock()
 
 	// loop over the container startup functions
@@ -127,7 +116,7 @@ func (container *Container) start() {
 	}
 
 	container.mutex.Lock()
-	container.state = RUNNING
+	container.state = stage1.RUNNING
 	container.mutex.Unlock()
 }
 
@@ -135,7 +124,7 @@ func (container *Container) start() {
 func (container *Container) Stop() error {
 	container.mutex.Lock()
 	container.shuttingDown = true
-	container.state = STOPPING
+	container.state = stage1.STOPPING
 	container.mutex.Unlock()
 
 	// loop over the container stopping functions
@@ -148,7 +137,7 @@ func (container *Container) Stop() error {
 	}
 
 	container.mutex.Lock()
-	container.state = STOPPED
+	container.state = stage1.STOPPED
 	container.mutex.Unlock()
 	return nil
 }
@@ -175,16 +164,17 @@ func (container *Container) ShortName() string {
 // Enter is used to load a console session within the container. It re-enters
 // the container through the stage2 rather than through the initd so that it can
 // easily stream in and out.
-func (c *Container) Enter(cmdline []string, stream *os.File) error {
+func (c *Container) Enter(cmdline []string, stdin, stdout, stderr *os.File, postStart func()) (*os.Process, error) {
 	launcher := &client2.Launcher{
-		Environment:  c.environment.Strings(),
-		Taskfiles:    c.cgroup.TasksFiles(),
-		Stdin:        stream,
-		Stdout:       stream,
-		Stderr:       stream,
-		User:         c.image.App.User,
-		Group:        c.image.App.Group,
-		Capabilities: c.capabilities,
+		Environment:   c.environment.Strings(),
+		Taskfiles:     c.cgroup.TasksFiles(),
+		Stdin:         stdin,
+		Stdout:        stdout,
+		Stderr:        stderr,
+		User:          c.image.App.User,
+		Group:         c.image.App.Group,
+		Capabilities:  c.capabilities,
+		PostStartFunc: postStart,
 	}
 
 	// If the command was blank, then use /bin/sh
@@ -204,10 +194,10 @@ func (c *Container) Enter(cmdline []string, stream *os.File) error {
 	// Get a process from the container and copy its namespaces
 	tasks, err := c.cgroup.Tasks()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(tasks) == 0 {
-		return fmt.Errorf("no processes are running inside the container")
+		return nil, fmt.Errorf("no processes are running inside the container")
 	}
 	launcher.SetNS(tasks[0])
 
@@ -215,10 +205,9 @@ func (c *Container) Enter(cmdline []string, stream *os.File) error {
 	c.log.Debugf("Executing command: %v", cmdline)
 	p, err := launcher.Run(cmdline...)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = p.Wait()
-	return err
+	return p, nil
 }
 
 // getInitdClient is an accessor to get current initd client object. This should
@@ -235,10 +224,10 @@ func (c *Container) getInitdClient() client3.Client {
 // markFailed is used to transition the container to the exited state.
 func (c *Container) markExited() {
 	c.mutex.Lock()
-	if c.state != EXITED {
+	if c.state != stage1.EXITED {
 		close(c.waitch)
 	}
-	c.state = EXITED
+	c.state = stage1.EXITED
 	c.mutex.Unlock()
 }
 

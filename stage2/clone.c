@@ -250,7 +250,7 @@ static void setup_container(clone_destination_data *args, pid_t uidmap_child) {
 
 		DEBUG("Exec %s\n", args->command);
 		execvpe(args->command, args->args, args->environment);
-		error(1, errno, "execvpe");
+		error(127, errno, "execvpe");
 	}
 
 	// --------------------------------------------------------------------

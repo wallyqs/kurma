@@ -50,6 +50,16 @@
 			"Rev": "e1fd6d09dac4a51451f4a6be024a1bc2a77d9e4e"
 		},
 		{
+			"ImportPath": "github.com/appc/cni/pkg/ns",
+			"Comment": "v0.1.0-74-gf04661a",
+			"Rev": "f04661aca116596d9ad038fe5fe3ca608b7d54bf"
+		},
+		{
+			"ImportPath": "github.com/appc/cni/pkg/types",
+			"Comment": "v0.1.0-74-gf04661a",
+			"Rev": "f04661aca116596d9ad038fe5fe3ca608b7d54bf"
+		},
+		{
 			"ImportPath": "github.com/appc/spec/discovery",
 			"Comment": "v0.7.4",
 			"Rev": "0875c991a496fe2b65ed296551c667b199a6bfb8"
@@ -82,11 +92,11 @@
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
-			"Rev": "1c83b3eabd45b6d76072b66b746c20815fb2872d"
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 		},
 		{
 			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "9c068cf16d982f8bd444b8c352acbeec34c4fe5b"
+			"Rev": "8096f47503459bcc74d1f4c487b7e6e42e5746b5"
 		},
 		{
 			"ImportPath": "github.com/gorilla/rpc",
@@ -107,12 +117,12 @@
 		},
 		{
 			"ImportPath": "github.com/russross/blackfriday",
-			"Comment": "v1.4-2-g300106c",
-			"Rev": "300106c228d52c8941d4b3de6054a6062a86dda3"
+			"Comment": "v1.2-42-g77efab5",
+			"Rev": "77efab57b2f74dd3f9051c79752b2e8995c8b789"
 		},
 		{
 			"ImportPath": "github.com/shurcooL/sanitized_anchor_name",
-			"Rev": "10ef21a441db47d8b13ebcc5fd2310f636973c77"
+			"Rev": "9a8b7d4e8f347bfa230879db9d7d4e4d9e19f962"
 		},
 		{
 			"ImportPath": "github.com/spf13/cobra",
@@ -124,16 +134,16 @@
 		},
 		{
 			"ImportPath": "github.com/vishvananda/netlink",
-			"Rev": "8e810149a2e531fed9b837c0c7d8a8922d2bedf7"
+			"Rev": "1e2e08e8a2dcdacaae3f14ac44c5cfa31361f270"
 		},
 		{
 			"ImportPath": "golang.org/x/net/html",
-			"Rev": "21c3935a8fc0f954d03e6b8a560c9600ffee38d2"
+			"Rev": "c2528b2dd8352441850638a8bb678c2ad056fd3e"
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/api/resource",
-			"Comment": "v1.2.0-alpha.4-529-gfa30b79",
-			"Rev": "fa30b796a8d6ad0ba641462c65ab46cc10c5e4bc"
+			"Comment": "v1.2.0-alpha.6-432-g66c99d5",
+			"Rev": "66c99d5e9c01c5eef9b4ce195564e1221ba75379"
 		},
 		{
 			"ImportPath": "speter.net/go/exp/math/dec/inf",
