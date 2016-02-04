@@ -29,6 +29,7 @@ var (
 		(*Container).startingEnvironment,
 		(*Container).startingCgroups,
 		(*Container).launchStage2,
+		(*Container).startingNetwork,
 		(*Container).startingIsolators,
 		(*Container).startApp,
 		(*Container).markStorageRunning,
@@ -37,6 +38,7 @@ var (
 	// These are the functions that will be called in order to handle container
 	// teardown.
 	containerStopping = []func(*Container) error{
+		(*Container).stoppingNetwork,
 		(*Container).stoppingCgroups,
 		(*Container).stoppingDirectories,
 		(*Container).stoppingrRemoveFromParent,
@@ -163,6 +165,20 @@ func (c *Container) startingCgroups() error {
 
 	c.log.Debug("Done setting up cgroup.")
 	return nil
+}
+
+// startingNetwork configures the networking for the container using the Network
+// Manager.
+func (c *Container) startingNetwork() error {
+	if c.skipNetworking || c.manager.networkManager == nil {
+		return nil
+	}
+	results, err := c.manager.networkManager.Provision(c)
+	if err != nil {
+		return err
+	}
+	c.pod.Networks = results
+	return err
 }
 
 // startingIsolators configures the specifics around the ACI image's isolators
@@ -333,6 +349,10 @@ func (c *Container) launchStage2() error {
 // startApp will start the application defined in the image manifest within the
 // pod.
 func (c *Container) startApp() error {
+	if len(c.image.App.Exec) == 0 {
+		return nil
+	}
+
 	client := c.getInitdClient()
 
 	// iterate the command arguments and fill in any potential environment
@@ -453,6 +473,15 @@ func (c *Container) waitLoop() {
 			return
 		}
 	}
+}
+
+// stoppingNetwork handles the teardown of the networks the container is
+// attached to.
+func (c *Container) stoppingNetwork() error {
+	if c.skipNetworking || c.manager.networkManager == nil {
+		return nil
+	}
+	return c.manager.networkManager.Deprovision(c)
 }
 
 // stoppingCgroups handles terminating all of the processes belonging to the

@@ -21,6 +21,7 @@ import (
 	"github.com/apcera/kurma/stage1/container"
 	"github.com/apcera/kurma/stage1/graphstorage/overlay"
 	"github.com/apcera/kurma/stage1/image"
+	"github.com/apcera/kurma/stage1/network"
 	"github.com/apcera/kurma/stage1/server"
 	"github.com/apcera/kurma/util"
 	"github.com/apcera/kurma/util/aciremote"
@@ -562,9 +563,9 @@ func (r *runner) displayNetwork() error {
 	return nil
 }
 
-// launchManager creates the container manager to allow containers to be
-// launched.
-func (r *runner) launchManager() error {
+// createImageManager creates the image manager that is used to store and
+// handles provisioning of new container mount namespaces.
+func (r *runner) createImageManager() error {
 	storage, err := overlay.New()
 	if err != nil {
 		return err
@@ -576,24 +577,60 @@ func (r *runner) launchManager() error {
 	if err != nil {
 		return fmt.Errorf("failed to create the image manager: %v", err)
 	}
-	imageManager.Log = r.log.Clone()
+	imageManager.SetLog(r.log.Clone())
 	r.imageManager = imageManager
+	return nil
+}
 
+// createContainerManager creates the container manager to allow containers to be
+// launched.
+func (r *runner) createContainerManager() error {
 	mopts := &container.Options{
 		ContainerDirectory: filepath.Join(kurmaPath, string(kurmaPathPods)),
 		VolumeDirectory:    filepath.Join(kurmaPath, string(kurmaPathVolumes)),
 		RequiredNamespaces: r.config.RequiredNamespaces,
 		ParentCgroupName:   r.config.ParentCgroupName,
 	}
-	m, err := container.NewManager(imageManager, mopts)
+	m, err := container.NewManager(r.imageManager, nil, mopts)
 	if err != nil {
 		return fmt.Errorf("failed to create the container manager: %v", err)
 	}
-	m.Log = r.log.Clone()
-	r.manager = m
+	m.SetLog(r.log.Clone())
+	r.containerManager = m
 	r.log.Trace("Container Manager has been initialized.")
 
 	os.Chdir(kurmaPath)
+	return nil
+}
+
+// createNetworkManager creates the network manager which launches the network
+// provisioner containers.
+func (r *runner) createNetworkManager() error {
+	networkManager, err := network.New(r.containerManager)
+	if err != nil {
+		r.log.Errorf("Failed to create network manager: %v", err)
+		return nil
+	}
+	networkManager.SetLog(r.log.Clone())
+	r.networkManager = networkManager
+	r.containerManager.SetNetworkManager(networkManager)
+
+	for _, containerNet := range r.config.ContainerNetworks {
+		func() {
+			hash, manifest, err := aciremote.LoadImage(containerNet.ACI, true, r.imageManager)
+			if err != nil {
+				r.log.Warnf("Failed to load image for network %q: %v", containerNet.Name, err)
+				return
+			}
+
+			if err := networkManager.CreateDriver(manifest, hash, containerNet); err != nil {
+				r.log.Errorf("Failed to configure network %q: %v", containerNet.Name, err)
+				return
+			}
+			r.log.Infof("Launched network driver %q", containerNet.Name)
+		}()
+	}
+
 	return nil
 }
 
@@ -647,7 +684,7 @@ func (r *runner) startServer() error {
 
 	opts := &server.Options{
 		ImageManager:      r.imageManager,
-		ContainerManager:  r.manager,
+		ContainerManager:  r.containerManager,
 		SocketFile:        filepath.Join(kurmaPath, "socket"),
 		SocketPermissions: &perms,
 		SocketGroup:       &group,
@@ -672,7 +709,7 @@ func (r *runner) startInitContainers() error {
 				return
 			}
 
-			if _, err := r.manager.Create("", "", manifest, hash); err != nil {
+			if _, err := r.containerManager.Create("", manifest, hash); err != nil {
 				r.log.Warnf("Failed to launch container %s: %v", manifest.Name.String(), err)
 				return
 			}
@@ -690,14 +727,14 @@ func (r *runner) startUdev() error {
 	}
 
 	// FIXME make this configurable on the container somehow
-	r.manager.SwapDirectory(systemContainersPath, func() {
+	r.containerManager.SwapDirectory(systemContainersPath, func() {
 		hash, manifest, err := aciremote.LoadImage(r.config.Services.Udev.ACI, true, r.imageManager)
 		if err != nil {
 			r.log.Warnf("Failed to load udev image: %v", err)
 			return
 		}
 
-		container, err := r.manager.Create("", "udev", manifest, hash)
+		container, err := r.containerManager.Create("udev", manifest, hash)
 		if err != nil {
 			r.log.Warnf("Failed to launch udev: %v", err)
 			return
@@ -728,7 +765,7 @@ func (r *runner) startNTP() error {
 	manifest.App.Environment.Set(
 		"NTP_SERVERS", strings.Join(r.config.Services.NTP.Servers, " "))
 
-	if _, err := r.manager.Create("", "ntp", manifest, hash); err != nil {
+	if _, err := r.containerManager.Create("ntp", manifest, hash); err != nil {
 		r.log.Warnf("Failed to start NTP: %v", err)
 		return nil
 	}
@@ -757,7 +794,7 @@ func (r *runner) startConsole() error {
 	manifest.App.Environment.Set(
 		"CONSOLE_KEYS", strings.Join(r.config.Services.Console.SSHKeys, "\n"))
 
-	if _, err := r.manager.Create("", "console", manifest, hash); err != nil {
+	if _, err := r.containerManager.Create("console", manifest, hash); err != nil {
 		return fmt.Errorf("Failed to start console: %v", err)
 	}
 	r.log.Debug("Started console")

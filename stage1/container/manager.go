@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	kschema "github.com/apcera/kurma/schema"
-	"github.com/apcera/kurma/stage1/image"
+	"github.com/apcera/kurma/stage1"
 	"github.com/apcera/kurma/util/cgroups"
 	"github.com/apcera/logray"
 	"github.com/apcera/util/uuid"
@@ -32,9 +32,10 @@ type Manager struct {
 	Log     *logray.Logger
 	Options *Options
 
-	imageManager *image.Manager
-	cgroup       *cgroups.Cgroup
-	volumeLock   sync.Mutex
+	imageManager   stage1.ImageManager
+	networkManager stage1.NetworkManager
+	cgroup         *cgroups.Cgroup
+	volumeLock     sync.Mutex
 
 	containers     map[string]*Container
 	containersLock sync.RWMutex
@@ -45,7 +46,7 @@ type Manager struct {
 // NewManager creates a new Manager with the provided options. It will ensure
 // the manager is setup and ready to create containers with the provided
 // configuration.
-func NewManager(imageManager *image.Manager, opts *Options) (*Manager, error) {
+func NewManager(imageManager stage1.ImageManager, networkManager stage1.NetworkManager, opts *Options) (stage1.ContainerManager, error) {
 	// validate cgroups is properly setup on the host
 	if err := cgroups.CheckCgroups(); err != nil {
 		return nil, fmt.Errorf("failed to check cgroups: %v", err)
@@ -58,13 +59,29 @@ func NewManager(imageManager *image.Manager, opts *Options) (*Manager, error) {
 	}
 
 	m := &Manager{
-		Log:          logray.New(),
-		Options:      opts,
-		imageManager: imageManager,
-		containers:   make(map[string]*Container),
-		cgroup:       cg,
+		Log:            logray.New(),
+		Options:        opts,
+		imageManager:   imageManager,
+		networkManager: networkManager,
+		containers:     make(map[string]*Container),
+		cgroup:         cg,
 	}
 	return m, nil
+}
+
+// SetLog sets the logger to be used by the manager.
+func (manager *Manager) SetLog(log *logray.Logger) {
+	manager.Log = log
+}
+
+// SetHostSocketFile sets the path to the host's socket file for granting API
+// access.
+func (manager *Manager) SetHostSocketFile(hostSocketFile string) {
+	manager.HostSocketFile = hostSocketFile
+}
+
+func (manager *Manager) SetNetworkManager(networkManager stage1.NetworkManager) {
+	manager.networkManager = networkManager
 }
 
 // Validate will ensure that the image manifest provided is valid to be run on
@@ -73,9 +90,6 @@ func NewManager(imageManager *image.Manager, opts *Options) (*Manager, error) {
 func (manager *Manager) Validate(imageManifest *schema.ImageManifest) error {
 	if imageManifest.App == nil {
 		return fmt.Errorf("the manifest must specify an App")
-	}
-	if len(imageManifest.App.Exec) == 0 {
-		return fmt.Errorf("the manifest App.Exec must specify a command to run")
 	}
 
 	// If the namespaces isolator is specified, validate a minimum set of namespaces
@@ -106,8 +120,8 @@ func (manager *Manager) Validate(imageManifest *schema.ImageManifest) error {
 // Create begins launching a container with the provided image manifest and
 // reader as the source of the ACI.
 func (manager *Manager) Create(
-	id, name string, imageManifest *schema.ImageManifest, imageHash string,
-) (*Container, error) {
+	name string, imageManifest *schema.ImageManifest, imageHash string,
+) (stage1.Container, error) {
 	// revalidate the image
 	if err := manager.Validate(imageManifest); err != nil {
 		return nil, err
@@ -116,10 +130,6 @@ func (manager *Manager) Create(
 	hash, err := types.NewHash(imageHash)
 	if err != nil {
 		return nil, err
-	}
-
-	if id == "" {
-		id = uuid.Variant4().String()
 	}
 
 	// handle a blank name
@@ -135,27 +145,24 @@ func (manager *Manager) Create(
 	container := &Container{
 		manager:   manager,
 		log:       manager.Log.Clone(),
-		uuid:      id,
+		uuid:      uuid.Variant4().String(),
 		waitch:    make(chan bool),
 		imageHash: imageHash,
 		image:     imageManifest,
-		pod: &schema.PodManifest{
-			ACKind:      schema.PodManifestKind,
-			ACVersion:   schema.AppContainerVersion,
-			Annotations: imageManifest.Annotations,
-			Apps: schema.AppList([]schema.RuntimeApp{
-				schema.RuntimeApp{
-					Name: types.ACName(name),
-					App:  imageManifest.App,
-					Image: schema.RuntimeImage{
-						ID:     *hash,
-						Name:   &imageManifest.Name,
-						Labels: imageManifest.Labels,
-					},
-				},
-			}),
-		},
+		pod:       kschema.BlankPodManifest(),
 	}
+	container.pod.Annotations = imageManifest.Annotations
+	container.pod.Apps = schema.AppList([]schema.RuntimeApp{
+		schema.RuntimeApp{
+			Name: types.ACName(name),
+			App:  imageManifest.App,
+			Image: schema.RuntimeImage{
+				ID:     *hash,
+				Name:   &imageManifest.Name,
+				Labels: imageManifest.Labels,
+			},
+		},
+	})
 	container.log.SetField("container", container.uuid)
 	container.log.Debugf("Launching container %s", container.uuid)
 
@@ -180,10 +187,10 @@ func (manager *Manager) remove(container *Container) {
 }
 
 // Containers returns a slice of the current containers on the host.
-func (manager *Manager) Containers() []*Container {
+func (manager *Manager) Containers() []stage1.Container {
 	manager.containersLock.RLock()
 	defer manager.containersLock.RUnlock()
-	containers := make([]*Container, 0, len(manager.containers))
+	containers := make([]stage1.Container, 0, len(manager.containers))
 	for _, c := range manager.containers {
 		containers = append(containers, c)
 	}
@@ -192,7 +199,7 @@ func (manager *Manager) Containers() []*Container {
 
 // Container returns a specific container matching the provided UUID, or nil if
 // a container with the UUID does not exist.
-func (manager *Manager) Container(uuid string) *Container {
+func (manager *Manager) Container(uuid string) stage1.Container {
 	manager.containersLock.RLock()
 	defer manager.containersLock.RUnlock()
 	return manager.containers[uuid]

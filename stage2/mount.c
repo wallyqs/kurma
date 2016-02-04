@@ -1,4 +1,4 @@
-// Copyright 2014-2015 Apcera Inc. All rights reserved.
+// Copyright 2014-2016 Apcera Inc. All rights reserved.
 //
 // Portions of this file are based on code from:
 //   https://github.com/arachsys/containers
@@ -46,9 +46,10 @@ void bindnode(char *src, char *dst) {
 }
 
 void privatize_namespace() {
-	// Convert the root mount into a private mount. This ensures that if the
-	// host's root partion was shared, we'll ensure it is private so no mount
-	// changes in the new namespace will propagate.
+	// Convert the root mount into a private mount if we've also creating a new
+	// mount namespace. This ensures that if the host's root partion was shared,
+	// we'll ensure it is private so no mount changes in the new namespace will
+	// propagate.
 	if (mount("none", "/", NULL, MS_REC | MS_PRIVATE, NULL) < 0)
 		error(1, errno, "Failed to convert new mount namespace to be private");
 }

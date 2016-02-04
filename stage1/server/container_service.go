@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/apcera/kurma/stage1"
 	"github.com/apcera/kurma/stage1/client"
-	"github.com/apcera/kurma/stage1/container"
 )
 
 type ContainerService struct {
@@ -15,7 +15,7 @@ type ContainerService struct {
 }
 
 func (s *ContainerService) Create(r *http.Request, req *client.ContainerCreateRequest, resp *client.ContainerResponse) error {
-	c, err := s.server.options.ContainerManager.Create("", req.Name, req.Image, req.ImageHash)
+	c, err := s.server.options.ContainerManager.Create(req.Name, req.Image, req.ImageHash)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (s *ContainerService) Destroy(r *http.Request, uuid *string, ret *client.No
 	return container.Stop()
 }
 
-func exportContainer(c *container.Container) *client.Container {
+func exportContainer(c stage1.Container) *client.Container {
 	return &client.Container{
 		UUID:  c.UUID(),
 		Image: c.ImageManifest(),

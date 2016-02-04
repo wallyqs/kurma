@@ -60,10 +60,12 @@ func (s *Server) containerEnterRequest(w http.ResponseWriter, req *http.Request)
 	go io.Copy(master, wsc)
 
 	// enter into the container
-	if err := container.Enter(enterRequest.Command, slave); err != nil {
+	process, err := container.Enter(enterRequest.Command, slave, slave, slave, nil)
+	if err != nil {
 		s.log.Errorf("Failed to enter container: %v", err)
 		http.Error(w, "Failed to enter container", 500)
 		return
 	}
+	process.Wait()
 	s.log.Debugf("Enter request finished")
 }

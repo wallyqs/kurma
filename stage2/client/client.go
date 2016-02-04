@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"syscall"
 
@@ -62,7 +63,8 @@ type Launcher struct {
 	Stdout *os.File
 	Stderr *os.File
 
-	postStart []func()
+	postStart     []func()
+	PostStartFunc func()
 }
 
 // SetNS will ensure the namespaces from the specified process will be applied
@@ -272,15 +274,21 @@ func (l *Launcher) Run(cmdargs ...string) (*os.Process, error) {
 	}
 
 	// Run any postStart funcs, just to cleanup
-	for _, f := range l.postStart {
-		f()
-	}
+	go func() {
+		for _, f := range l.postStart {
+			f()
+		}
+		if l.PostStartFunc != nil {
+			l.PostStartFunc()
+		}
+	}()
 
 	// Wait for the command to ensure the process is reaped when its done.
 	if l.Detach {
 		go cmd.Wait()
 	}
 
+	runtime.Gosched()
 	return cmd.Process, nil
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2014-2015 Apcera Inc. All rights reserved.
+// Copyright 2014-2016 Apcera Inc. All rights reserved.
 
 #ifndef INITD_SPAWNER_SPAWNER_H
 #define INITD_SPAWNER_SPAWNER_H

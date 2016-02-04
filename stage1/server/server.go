@@ -7,8 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/apcera/kurma/stage1/container"
-	"github.com/apcera/kurma/stage1/image"
+	"github.com/apcera/kurma/stage1"
 	"github.com/apcera/logray"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/rpc"
@@ -18,8 +17,8 @@ import (
 // Options devices the configuration fields that can be passed to New() when
 // instantiating a new Server.
 type Options struct {
-	ImageManager      *image.Manager
-	ContainerManager  *container.Manager
+	ImageManager      stage1.ImageManager
+	ContainerManager  stage1.ContainerManager
 	SocketFile        string
 	SocketGroup       *int
 	SocketPermissions *os.FileMode
@@ -61,7 +60,7 @@ func (s *Server) Start() error {
 			return err
 		}
 	}
-	s.options.ContainerManager.HostSocketFile = s.options.SocketFile
+	s.options.ContainerManager.SetHostSocketFile(s.options.SocketFile)
 
 	svr := rpc.NewServer()
 	svr.RegisterCodec(json.NewCodec(), "application/json")

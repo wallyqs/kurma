@@ -1,6 +1,10 @@
-// Copyright 2015 Apcera Inc. All rights reserved.
+// Copyright 2015-2016 Apcera Inc. All rights reserved.
 
 package init
+
+import (
+	"github.com/apcera/kurma/networking/types"
+)
 
 type kurmaConfig struct {
 	Debug              bool                      `json:"debug,omitempty"`
@@ -15,6 +19,7 @@ type kurmaConfig struct {
 	RequiredNamespaces []string                  `json:"required_namespaces,omitempty"`
 	Services           kurmaServices             `json:"services,omitempty"`
 	InitContainers     []string                  `json:"init_containers,omitempty"`
+	ContainerNetworks  []*types.NetConf          `json:"container_networks,omitempty"`
 }
 
 type OEMConfig struct {
@@ -168,5 +173,10 @@ func (cfg *kurmaConfig) mergeConfig(o *kurmaConfig) {
 	}
 	if len(o.Services.Console.SSHKeys) > 0 {
 		cfg.Services.Console.SSHKeys = o.Services.Console.SSHKeys
+	}
+
+	// container networks
+	if len(o.ContainerNetworks) > 0 {
+		cfg.ContainerNetworks = append(cfg.ContainerNetworks, o.ContainerNetworks...)
 	}
 }

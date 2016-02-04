@@ -3,6 +3,7 @@
 package client
 
 import (
+	kschema "github.com/apcera/kurma/schema"
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
 )
@@ -10,7 +11,7 @@ import (
 type Container struct {
 	UUID  string                `json:"uuid"`
 	Image *schema.ImageManifest `json:"image"`
-	Pod   *schema.PodManifest   `json:"pod"`
+	Pod   *kschema.PodManifest  `json:"pod"`
 	State State                 `json:"state"`
 }
 

@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/apcera/kurma/stage1/image"
+	"github.com/apcera/kurma/stage1"
 	"github.com/apcera/util/tempfile"
 	"github.com/appc/spec/discovery"
 	"github.com/appc/spec/schema"
@@ -88,7 +88,7 @@ func RetrieveImage(imageUri string, insecure bool) (tempfile.ReadSeekCloser, err
 // Image Manager, returning the hash, manifest, or an error on failure. In the
 // case of AppC discovery format, it will check to see if the image already
 // exists before retrieving.
-func LoadImage(imageUri string, insecure bool, imageManager *image.Manager) (string, *schema.ImageManifest, error) {
+func LoadImage(imageUri string, insecure bool, imageManager stage1.ImageManager) (string, *schema.ImageManifest, error) {
 	u, err := url.Parse(imageUri)
 	if err != nil {
 		return "", nil, err

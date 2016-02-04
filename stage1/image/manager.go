@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/apcera/kurma/stage1"
 	"github.com/apcera/kurma/stage1/graphstorage"
 	"github.com/apcera/kurma/util/cgroups"
 	"github.com/apcera/logray"
@@ -50,7 +51,7 @@ type Manager struct {
 }
 
 // New will create and return a new Manager for managing images.
-func New(provisioner graphstorage.StorageProvisioner, options *Options) (*Manager, error) {
+func New(provisioner graphstorage.StorageProvisioner, options *Options) (stage1.ImageManager, error) {
 	m := &Manager{
 		Log:         logray.New(),
 		Options:     options,
@@ -63,6 +64,11 @@ func New(provisioner graphstorage.StorageProvisioner, options *Options) (*Manage
 	}
 
 	return m, nil
+}
+
+// SetLog sets the logger to be used by the manager.
+func (manager *Manager) SetLog(log *logray.Logger) {
+	manager.Log = log
 }
 
 // Rescan will reset the list of current images and reload it from disk.

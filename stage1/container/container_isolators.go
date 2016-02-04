@@ -37,7 +37,12 @@ func (c *Container) setupLinuxNamespaceIsolator(launcher *client.Launcher) error
 		launcher.NewIPCNamespace = true
 		launcher.NewPIDNamespace = true
 		launcher.NewUTSNamespace = true
+		launcher.NewNetworkNamespace = true
 	}
+
+	// set whether we should skip networking depending on if a new network
+	// namespace is being setup or not
+	c.skipNetworking = !launcher.NewNetworkNamespace
 
 	return nil
 }
