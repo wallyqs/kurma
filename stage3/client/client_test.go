@@ -3,6 +3,7 @@
 package client
 
 import (
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -380,20 +381,24 @@ func setupReadRequest(t *testing.T, l net.Listener, content *string, response st
 		// parser in Go to mirror the one in C. So this sets up a goroutine to read
 		// until the connection closes. Can't use a normal ReadAll because there
 		// won't be an EOF or anything. Also don't want to write until it can
-		// read. This is kind of funky and could be better, but it allows us to
-		// tests the raw message as opposed to the parsed payload.
+		// read. This is kind of funky and could be better, but it allows us to test
+		// the raw message as opposed to the parsed payload.
 		go func() {
 			defer close(doneChan)
 			close(ch)
 
 			// Allow a few attempts in the event of a short read. But once we get
 			// content, then break.
-			for i := 0; i < 5; i++ {
-				b, _ := ioutil.ReadAll(c)
+			for {
+				b, err := ioutil.ReadAll(c)
+				if err == io.EOF {
+					return
+				}
 				*content = string(b)
 				if len(b) > 0 {
-					break
+					return
 				}
+				time.Sleep(time.Millisecond)
 			}
 		}()
 
