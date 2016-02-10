@@ -391,13 +391,15 @@ func setupReadRequest(t *testing.T, l net.Listener, content *string, response st
 			// content, then break.
 			for {
 				b, err := ioutil.ReadAll(c)
-				if err == io.EOF {
-					return
-				}
 				*content = string(b)
 				if len(b) > 0 {
 					return
 				}
+				if err == io.EOF {
+					t.Log("Received EOF")
+					return
+				}
+				t.Logf("Recieved %v", err)
 				time.Sleep(time.Millisecond)
 			}
 		}()
