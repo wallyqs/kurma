@@ -358,11 +358,13 @@ func TestCgroup_AddTask(t *testing.T) {
 			if len(parts) != 3 {
 				continue
 			}
-			groups[parts[1]] = parts[2]
+			for _, ctype := range strings.Split(parts[1], ",") {
+				groups[ctype] = parts[2]
+			}
 		}
 
 		for _, ctype := range defaultCgroups {
-			if groups[ctype] != "/"+uniquename {
+			if !strings.HasSuffix(groups[ctype], "/"+uniquename) {
 				Fatalf(t, "Process %d not in the right cgroup", pid)
 			}
 		}
