@@ -5,8 +5,10 @@ package commands
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/apcera/kurma/client/cli"
+	"github.com/apcera/kurma/stage1/client"
 	"github.com/apcera/termtables"
 	"github.com/spf13/cobra"
 )
@@ -39,6 +41,7 @@ func cmdList(cmd *cobra.Command, args []string) {
 	table := termtables.CreateTable()
 
 	table.AddHeaders("UUID", "Name", "State")
+	sort.Sort(sortedContainers(containers))
 
 	for _, container := range containers {
 		var appName string
@@ -49,4 +52,13 @@ func cmdList(cmd *cobra.Command, args []string) {
 		table.AddRow(container.UUID, appName, container.State)
 	}
 	fmt.Printf("%s", table.Render())
+
+}
+
+type sortedContainers []*client.Container
+
+func (a sortedContainers) Len() int      { return len(a) }
+func (a sortedContainers) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a sortedContainers) Less(i, j int) bool {
+	return a[i].Pod.Apps[0].Name.String() < a[j].Pod.Apps[0].Name.String()
 }
