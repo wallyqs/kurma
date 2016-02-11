@@ -8,6 +8,8 @@ import (
 	"os"
 
 	"github.com/apcera/kurma/client/cli"
+	"github.com/apcera/kurma/util/aciremote"
+	"github.com/apcera/util/tempfile"
 	"github.com/appc/spec/schema"
 	"github.com/spf13/cobra"
 )
@@ -36,6 +38,8 @@ func cmdCreate(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	var f tempfile.ReadSeekCloser
+
 	// if a manifest file is given, then read it and use it as the manifest
 	var manifest *schema.ImageManifest
 	if createManifestFile != "" {
@@ -55,8 +59,16 @@ func cmdCreate(cmd *cobra.Command, args []string) {
 	// open the file
 	f, err := os.Open(args[0])
 	if err != nil {
-		fmt.Printf("Failed to open the container image: %v\n", err)
-		os.Exit(1)
+		if os.IsNotExist(err) {
+			f, err = aciremote.RetrieveImage(args[0], true)
+			if err != nil {
+				fmt.Printf("Failed to retrieve the container image: %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			fmt.Printf("Failed to open the container image: %v\n", err)
+			os.Exit(1)
+		}
 	}
 	defer f.Close()
 
