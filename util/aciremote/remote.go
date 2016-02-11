@@ -4,12 +4,15 @@ package aciremote
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 
 	"github.com/apcera/kurma/stage1/image"
 	"github.com/apcera/util/tempfile"
+	docker2aci "github.com/appc/docker2aci/lib"
+	docker2acicommon "github.com/appc/docker2aci/lib/common"
 	"github.com/appc/spec/discovery"
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
@@ -57,6 +60,27 @@ func RetrieveImage(imageUri string, insecure bool) (tempfile.ReadSeekCloser, err
 		}
 
 		return tempfile.New(resp.Body)
+
+	case "docker":
+		dockerName := imageUri[9:]
+
+		// create a temp path for the conversion
+		tmpdir, err := ioutil.TempDir(os.TempDir(), "docker2aci")
+		if err != nil {
+			return nil, fmt.Errorf("failed to create temp path to handle Docker image conversion: %v", err)
+		}
+		defer os.RemoveAll(tmpdir)
+
+		acis, err := docker2aci.Convert(dockerName, true, tmpdir, tmpdir, docker2acicommon.NoCompression, "", "", insecure)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert Docker image: %v", err)
+		}
+
+		f, err := os.Open(acis[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to open converted Docker image: %v", err)
+		}
+		return f, nil
 
 	case "":
 		app, err := discovery.NewAppFromString(imageUri)
