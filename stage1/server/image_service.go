@@ -32,12 +32,7 @@ func (s *ImageService) List(r *http.Request, args *client.None, resp *client.Ima
 	images := s.server.options.ImageManager.ListImages()
 	resp.Images = make([]*client.Image, 0, len(images))
 	for hash, image := range images {
-		imageSize, err := s.server.options.ImageManager.GetImageSize(hash)
-		if err != nil {
-			s.server.log.Warnf("Failed to get image size %s: %v", hash, err)
-			continue
-		}
-		resp.Images = append(resp.Images, &client.Image{Hash: hash, Manifest: image, Size: imageSize})
+		resp.Images = append(resp.Images, &client.Image{Hash: hash, Manifest: image, Size: 0})
 	}
 	return nil
 }
@@ -50,11 +45,7 @@ func (s *ImageService) Get(r *http.Request, hash *string, resp *client.ImageResp
 	if image == nil {
 		return fmt.Errorf("specified image not found")
 	}
-	imageSize, err := s.server.options.ImageManager.GetImageSize(*hash)
-	if err != nil {
-		return err
-	}
-	resp.Image = &client.Image{Hash: *hash, Manifest: image, Size: imageSize}
+	resp.Image = &client.Image{Hash: *hash, Manifest: image, Size: 0}
 	return nil
 }
 
