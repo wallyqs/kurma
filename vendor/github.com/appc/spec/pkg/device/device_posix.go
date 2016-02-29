@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build freebsd netbsd openbsd darwin
+// +build linux freebsd netbsd openbsd darwin
 
 package device
 
