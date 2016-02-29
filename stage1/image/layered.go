@@ -43,6 +43,11 @@ func (lp *layerProcessor) processDependencies(manifest *schema.ImageManifest) er
 	for _, dep := range manifest.Dependencies {
 		dephash := dep.ImageID.String()
 
+		// Validate that it already hasn't showed up in resolution. If it has, skip it.
+		if lp.refs[dephash] {
+			continue
+		}
+
 		// locate the image
 		depmanifest := lp.manager.GetImage(dephash)
 		if depmanifest == nil {
@@ -50,14 +55,9 @@ func (lp *layerProcessor) processDependencies(manifest *schema.ImageManifest) er
 			return fmt.Errorf("failed to locate dependent image %s:%s", dep.ImageName.String(), version)
 		}
 
-		// validate that it already hasn't showed up in resolution
-		if lp.refs[dephash] {
-			version, _ := dep.Labels.Get("version")
-			return fmt.Errorf("circular reference within dependencies found on %s:%s/%s", dep.ImageName.String(), version, dephash)
-		}
-
 		// add it to the layers and walk its dependendencies
 		lp.layers = append(lp.layers, dephash)
+		lp.refs[dephash] = true
 		if err := lp.processDependencies(depmanifest); err != nil {
 			return err
 		}
