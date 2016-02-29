@@ -37,7 +37,7 @@ func RetrieveImage(imageUri string, insecure bool) (tempfile.ReadSeekCloser, err
 
 	insecureOption := discovery.InsecureNone
 	if insecure {
-		insecureOption = discovery.InsecureHTTP
+		insecureOption = discovery.InsecureHttp
 	}
 
 	switch u.Scheme {
