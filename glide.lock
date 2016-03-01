@@ -1,5 +1,5 @@
-hash: aac98a67ce62bdf54fd7994ed4829c76c1c6fcaf59c1976dda2e6249384ed3ea
-updated: 2016-02-29T15:43:31.6607571-08:00
+hash: fee3dccae0c044bc936032f5cd86359749821ebd777b11a1bdbb56e595cbe846
+updated: 2016-02-29T16:22:59.069757948-08:00
 imports:
 - name: github.com/apcera/logray
   version: 9b80efb98957efc08a728197c395bed2fc9e9724
@@ -42,25 +42,47 @@ imports:
   - schema
   - schema/types
   - Godeps/_workspace/src/github.com/camlistore/camlistore/pkg/errorutil
-  - Godeps/_workspace/src/golang.org/x/net/html
-  - Godeps/_workspace/src/golang.org/x/net/html/atom
-  - schema/common
   - Godeps/_workspace/src/github.com/coreos/go-semver/semver
   - Godeps/_workspace/src/k8s.io/kubernetes/pkg/api/resource
+  - schema/common
+  - Godeps/_workspace/src/golang.org/x/net/html
+  - Godeps/_workspace/src/golang.org/x/net/html/atom
   - aci
   - pkg/acirenderer
   - Godeps/_workspace/src/github.com/spf13/pflag
   - Godeps/_workspace/src/speter.net/go/exp/math/dec/inf
   - pkg/tarheader
   - pkg/device
+- name: github.com/coreos/go-systemd
+  version: 7b2428fec40033549c68f54e26e89e7ca9a9ce31
+  subpackages:
+  - dbus
+  - util
 - name: github.com/coreos/ioprogress
   version: 4637e494fd9b23c5565ee193e89f91fdc1639bc0
 - name: github.com/creack/termios
   version: d60649a6c40aa68303e3d69e0423a1e7aedf4bbd
   subpackages:
   - raw
+- name: github.com/docker/docker
+  version: 6a960069596a5d43a50b7675454169aad06972ca
+  subpackages:
+  - pkg/stringutils
+  - pkg/random
+  - pkg/mount
+  - pkg/symlink
+  - pkg/longpath
+  - pkg/system
+- name: github.com/docker/go-units
+  version: 5d2041e26a699eaca682e2ea41c8f891e1060444
 - name: github.com/dustin/go-humanize
   version: 8929fe90cee4b2cb9deb468b51fb34eba64d1bf0
+- name: github.com/godbus/dbus
+  version: 230e4b23db2fd81c53eaa0073f76659d4849ce51
+- name: github.com/golang/protobuf
+  version: 552c7b9542c194800fd493123b3798ef0a832032
+  subpackages:
+  - proto
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
@@ -75,10 +97,37 @@ imports:
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/kr/pty
   version: f7ee69f31298ecbe5d2b349c711e2547a617d398
+- name: github.com/opencontainers/runc
+  version: b1872a068e5f5743cd8a9755019fc806e1c6e112
+  subpackages:
+  - libcontainer
+  - libcontainer/configs
+  - libcontainer/apparmor
+  - libcontainer/cgroups
+  - libcontainer/cgroups/fs
+  - libcontainer/cgroups/systemd
+  - libcontainer/configs/validate
+  - libcontainer/criurpc
+  - libcontainer/keys
+  - libcontainer/label
+  - libcontainer/seccomp
+  - libcontainer/stacktrace
+  - libcontainer/system
+  - libcontainer/user
+  - libcontainer/utils
+  - libcontainer/selinux
+- name: github.com/seccomp/libseccomp-golang
+  version: 1b506fc7c24eec5a3693cdcbed40d9c226cfc6a1
+- name: github.com/Sirupsen/logrus
+  version: 219c8cb75c258c552e999735be6df753ffc7afdc
 - name: github.com/spf13/cobra
   version: 65a708cee0a4424f4e353d031ce440643e312f92
 - name: github.com/spf13/pflag
   version: 7f60f83a2c81bc3c3c0d5297f61ddfa68da9d3b7
+- name: github.com/syndtr/gocapability
+  version: 2c00daeb6c3b45114c80ac44119e7b8801fdd852
+  subpackages:
+  - capability
 - name: github.com/vishvananda/netlink
   version: 814b43a0c71f01a137581a3fadf37619e71751b8
   subpackages:
@@ -87,4 +136,8 @@ imports:
   version: 5dc8cb4b8a8eb076cbb5a06bc3b8682c15bdbbd3
   subpackages:
   - ssh/terminal
+- name: golang.org/x/sys
+  version: e11762ca30adc5b39fdbfd8c4250dabeb8e456d3
+  subpackages:
+  - unix
 devImports: []

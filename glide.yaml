@@ -6,6 +6,8 @@ import:
   # than using the vendored one which isn't compatible.
 - package: github.com/spf13/pflag
   version: master
+- package: github.com/coreos/go-systemd
+  version: master
 
 - package: github.com/apcera/logray
 - package: github.com/apcera/termtables
