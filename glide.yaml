@@ -23,7 +23,6 @@ import:
   - wsconn
 - package: github.com/appc/cni
   subpackages:
-  - pkg/ns
   - pkg/types
 - package: github.com/appc/docker2aci
   subpackages:
