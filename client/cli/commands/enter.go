@@ -8,13 +8,14 @@ import (
 	"os"
 
 	"github.com/apcera/kurma/client/cli"
+	"github.com/appc/spec/schema/types"
 	"github.com/creack/termios/raw"
 	"github.com/spf13/cobra"
 )
 
 var (
 	EnterCmd = &cobra.Command{
-		Use:   "enter UUID",
+		Use:   "enter UUID APP",
 		Short: "Enter a running container",
 		Run:   cmdEnter,
 	}
@@ -38,8 +39,15 @@ func cmdEnter(cmd *cobra.Command, args []string) {
 		defer raw.TcSetAttr(os.Stdin.Fd(), termios)
 	}
 
+	app := &types.App{
+		WorkingDirectory: "/",
+		User:             "0",
+		Group:            "0",
+		Exec:             args[2:],
+	}
+
 	// Initialize the reader/writer
-	conn, err := cli.GetClient().EnterContainer(args[0], args[1:]...)
+	conn, err := cli.GetClient().EnterContainer(args[0], args[1], app)
 	if err != nil {
 		fmt.Printf("Failed to enter the container: %v\n", err)
 		os.Exit(1)

@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/apcera/kurma/client/cli"
+	"github.com/apcera/kurma/stage1/client"
 	"github.com/apcera/kurma/util/aciremote"
 	"github.com/apcera/util/tempfile"
 	"github.com/appc/spec/schema"
@@ -18,7 +20,7 @@ import (
 var (
 	CreateCmd = &cobra.Command{
 		Use:   "create FILE",
-		Short: "Create a new container",
+		Short: "Create a new pod",
 		Run:   cmdCreate,
 	}
 
@@ -28,34 +30,12 @@ var (
 
 func init() {
 	cli.RootCmd.AddCommand(CreateCmd)
-	CreateCmd.Flags().StringVarP(&createName, "name", "n", "", "container's name")
-	CreateCmd.Flags().StringVarP(&createManifestFile, "manifest", "", "", "alternative manifest to use")
+	CreateCmd.Flags().StringVarP(&createName, "name", "n", "", "pod's name")
+	CreateCmd.Flags().StringVarP(&createManifestFile, "manifest", "", "", "specific manifest to use")
 }
 
-func cmdCreate(cmd *cobra.Command, args []string) {
-	if len(args) == 0 || len(args) > 1 {
-		fmt.Printf("Invalid command options specified.\n")
-		cmd.Help()
-		return
-	}
-
+func createPodFromFile(args []string) (*client.Image, error) {
 	var f tempfile.ReadSeekCloser
-
-	// if a manifest file is given, then read it and use it as the manifest
-	var manifest *schema.ImageManifest
-	if createManifestFile != "" {
-		manifestFile, err := os.Open(createManifestFile)
-		if err != nil {
-			fmt.Printf("Failed to open the manifest file: %v\n", err)
-			os.Exit(1)
-		}
-		defer manifestFile.Close()
-
-		if err := json.NewDecoder(manifestFile).Decode(&manifest); err != nil {
-			fmt.Printf("Failed to parse the provided manifest: %v\n", err)
-			os.Exit(1)
-		}
-	}
 
 	// open the file
 	f, err := os.Open(args[0])
@@ -89,17 +69,72 @@ func cmdCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// use the manifest from the image if none was already loaded
-	if manifest == nil {
-		manifest = image.Manifest
+	return image, nil
+}
+
+func cmdCreate(cmd *cobra.Command, args []string) {
+	// if a manifest file is given, then read it and use it as the manifest
+	manifest := schema.BlankPodManifest()
+	if createManifestFile != "" {
+		manifestFile, err := os.Open(createManifestFile)
+		if err != nil {
+			fmt.Printf("Failed to open the manifest file: %v\n", err)
+			os.Exit(1)
+		}
+		defer manifestFile.Close()
+
+		if err := json.NewDecoder(manifestFile).Decode(&manifest); err != nil {
+			fmt.Printf("Failed to parse the provided manifest: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		image, err := createPodFromFile(args)
+		if err != nil {
+			fmt.Printf("Failed to handle image: %v\n", err)
+			os.Exit(1)
+		}
+
+		// handle a blank name
+		if createName == "" {
+			n, err := convertACIdentifierToACName(image.Manifest.Name)
+			if err != nil {
+				fmt.Printf("Failed to convert the pod name: %v\n", err)
+				os.Exit(1)
+			}
+			createName = n.String()
+		}
+
+		imageID, err := types.NewHash(image.Hash)
+		if err != nil {
+			fmt.Printf("Failed to parse the image hash: %v\n", err)
+			os.Exit(1)
+		}
+
+		// create the RuntimeApp
+		runtimeApp := schema.RuntimeApp{
+			Name: *types.MustACName(createName),
+			Image: schema.RuntimeImage{
+				ID: *imageID,
+			},
+		}
+		manifest.Apps = append(manifest.Apps, runtimeApp)
 	}
 
 	// create the container
-	container, err := cli.GetClient().CreateContainer(createName, image.Hash, manifest)
+	pod, err := cli.GetClient().CreatePod(createName, manifest)
 	if err != nil {
 		fmt.Printf("Failed to launch the new container: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Launched container %s\n", container.UUID)
+	fmt.Printf("Launched pod %s\n", pod.UUID)
+}
+
+func convertACIdentifierToACName(name types.ACIdentifier) (*types.ACName, error) {
+	parts := strings.Split(name.String(), "/")
+	n, err := types.SanitizeACName(parts[len(parts)-1])
+	if err != nil {
+		return nil, err
+	}
+	return types.NewACName(n)
 }

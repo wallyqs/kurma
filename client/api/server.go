@@ -57,7 +57,7 @@ func (s *Server) Start() error {
 
 	svr := rpc.NewServer()
 	svr.RegisterCodec(json2.NewCodec(), "application/json")
-	svr.RegisterService(&ContainerService{server: s}, "Containers")
+	svr.RegisterService(&PodService{server: s}, "Pods")
 	svr.RegisterService(&ImageService{server: s}, "Images")
 
 	router := mux.NewRouter()

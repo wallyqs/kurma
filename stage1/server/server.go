@@ -17,11 +17,12 @@ import (
 // Options devices the configuration fields that can be passed to New() when
 // instantiating a new Server.
 type Options struct {
-	ImageManager      stage1.ImageManager
-	ContainerManager  stage1.ContainerManager
-	SocketFile        string
-	SocketGroup       *int
-	SocketPermissions *os.FileMode
+	ImageManager         stage1.ImageManager
+	PodManager           stage1.PodManager
+	SocketRemoveIfExists bool
+	SocketFile           string
+	SocketGroup          *int
+	SocketPermissions    *os.FileMode
 }
 
 // Server represents the process that acts as a daemon to receive container
@@ -44,6 +45,12 @@ func New(options *Options) *Server {
 // Start begins the server. It will return an error if starting the Server
 // fails, or return nil on success.
 func (s *Server) Start() error {
+	if s.options.SocketRemoveIfExists {
+		if _, err := os.Stat(s.options.SocketFile); err == nil {
+			os.Remove(s.options.SocketFile)
+		}
+	}
+
 	l, err := net.Listen("unix", s.options.SocketFile)
 	if err != nil {
 		return err
@@ -60,11 +67,11 @@ func (s *Server) Start() error {
 			return err
 		}
 	}
-	s.options.ContainerManager.SetHostSocketFile(s.options.SocketFile)
+	s.options.PodManager.SetHostSocketFile(s.options.SocketFile)
 
 	svr := rpc.NewServer()
 	svr.RegisterCodec(json2.NewCodec(), "application/json")
-	svr.RegisterService(&ContainerService{server: s}, "Containers")
+	svr.RegisterService(&PodService{server: s}, "Pods")
 	svr.RegisterService(&ImageService{server: s}, "Images")
 
 	router := mux.NewRouter()

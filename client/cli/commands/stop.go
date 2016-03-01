@@ -13,7 +13,7 @@ import (
 var (
 	StopCmd = &cobra.Command{
 		Use:   "stop UUID",
-		Short: "Stop a running container",
+		Short: "Stop a running pod",
 		Run:   cmdStop,
 	}
 )
@@ -29,10 +29,10 @@ func cmdStop(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if err := cli.GetClient().DestroyContainer(args[0]); err != nil {
-		fmt.Printf("Failed to stop the container: %v\n", err)
+	if err := cli.GetClient().DestroyPod(args[0]); err != nil {
+		fmt.Printf("Failed to stop the pod: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Destroyed container %s\n", args[0])
+	fmt.Printf("Destroyed pod %s\n", args[0])
 }

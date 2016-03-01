@@ -9,7 +9,7 @@ import (
 var (
 	// version is the plain text version string. It will often be set at build
 	// time though substitution.
-	version string = "0.2.0+git"
+	version string = "0.3.0+git"
 
 	// KurmaVersion is the SemVer representation of version
 	KurmaVersion types.SemVer

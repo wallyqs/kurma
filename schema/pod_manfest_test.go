@@ -7,7 +7,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/apcera/kurma/networking/types"
+	"github.com/apcera/kurma/network/types"
 	tt "github.com/apcera/util/testtool"
 	cnitypes "github.com/appc/cni/pkg/types"
 	appcschema "github.com/appc/spec/schema"

@@ -4,8 +4,8 @@ package init
 
 var (
 	// The setup functions that should be run in order to handle setting up the
-	// host system to create and manage containers. These functions focus
-	// primarily on runtime actions that must be done each time on boot.
+	// host system to create and manage pods. These functions focus primarily on
+	// runtime actions that must be done each time on boot.
 	setupFunctions = []func(*runner) error{
 		(*runner).startSignalHandling,
 		(*runner).switchRoot,
@@ -17,7 +17,7 @@ var (
 		(*runner).loadModules,
 		(*runner).createDirectories,
 		(*runner).createImageManager,
-		(*runner).createContainerManager,
+		(*runner).createPodManager,
 		(*runner).startUdev,
 		(*runner).mountDisks,
 		(*runner).cleanOldPods,
@@ -30,7 +30,7 @@ var (
 		(*runner).setupDiscoveryProxy,
 		(*runner).startNTP,
 		(*runner).startServer,
-		(*runner).startInitContainers,
+		(*runner).startInitPods,
 		(*runner).displayNetwork,
 		(*runner).startConsole,
 		(*runner).rootReadonly,

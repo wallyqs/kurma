@@ -3,7 +3,7 @@
 package schema
 
 import (
-	"github.com/apcera/kurma/networking/types"
+	"github.com/apcera/kurma/network/types"
 	appcschema "github.com/appc/spec/schema"
 	appctypes "github.com/appc/spec/schema/types"
 )

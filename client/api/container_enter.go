@@ -33,7 +33,7 @@ func (s *Server) containerEnterRequest(w http.ResponseWriter, req *http.Request)
 	}
 
 	// call out
-	owsc, err := s.client.EnterContainer(enterRequest.UUID, enterRequest.Command...)
+	owsc, err := s.client.EnterContainer(enterRequest.UUID, enterRequest.AppName, &enterRequest.App)
 	if err != nil {
 		s.log.Errorf("Failed to call to kurma daemon: %v", err)
 		http.Error(w, "Failed to upgrade socket", 500)

@@ -3,16 +3,15 @@
 package client
 
 import (
-	kschema "github.com/apcera/kurma/schema"
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
 )
 
-type Container struct {
-	UUID  string                `json:"uuid"`
-	Image *schema.ImageManifest `json:"image"`
-	Pod   *kschema.PodManifest  `json:"pod"`
-	State State                 `json:"state"`
+type Pod struct {
+	UUID  string              `json:"uuid"`
+	Name  string              `json:"name"`
+	Pod   *schema.PodManifest `json:"pod"`
+	State State               `json:"state"`
 }
 
 type Image struct {
@@ -21,23 +20,23 @@ type Image struct {
 	Size     int64                 `json:"size"`
 }
 
-type ContainerCreateRequest struct {
-	Name      string                `json:"name"`
-	ImageHash string                `json:"image_hash"`
-	Image     *schema.ImageManifest `json:"image"`
+type PodCreateRequest struct {
+	Name string              `json:"name"`
+	Pod  *schema.PodManifest `json:"pod"`
 }
 
-type ContainerListResponse struct {
-	Containers []*Container `json:"containers"`
+type PodListResponse struct {
+	Pods []*Pod `json:"pods"`
 }
 
-type ContainerResponse struct {
-	Container *Container `json:"container"`
+type PodResponse struct {
+	Pod *Pod `json:"pod"`
 }
 
 type ContainerEnterRequest struct {
-	UUID    string   `json:"uuid"`
-	Command []string `json:"command"`
+	UUID    string    `json:"uuid"`
+	AppName string    `json:"appName"`
+	App     types.App `json:"app"`
 }
 
 type ImageListResponse struct {

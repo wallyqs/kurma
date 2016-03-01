@@ -18,7 +18,7 @@ func TestRetrieveLocalFile(t *testing.T) {
 
 	uri := "file://" + f.Name()
 
-	reader, err := RetrieveImage(uri, false)
+	reader, err := RetrieveImage(uri, nil, false)
 	if err != nil {
 		t.Fatalf("Expected no error retrieving %s; got %s", uri, err)
 	}
@@ -28,7 +28,7 @@ func TestRetrieveLocalFile(t *testing.T) {
 func TestRetrieveUnsupportedScheme(t *testing.T) {
 	uri := "fakescheme://google.com"
 
-	_, err := RetrieveImage(uri, false)
+	_, err := RetrieveImage(uri, nil, false)
 	if err == nil {
 		t.Fatalf("Expected error with URI %q, got none", uri)
 	}

@@ -34,7 +34,7 @@ func (s *Server) containerEnterRequest(w http.ResponseWriter, req *http.Request)
 	}
 
 	// get the container
-	container := s.options.ContainerManager.Container(enterRequest.UUID)
+	container := s.options.PodManager.Pod(enterRequest.UUID)
 	if container == nil {
 		http.Error(w, "Not Found", 404)
 		return
@@ -60,7 +60,7 @@ func (s *Server) containerEnterRequest(w http.ResponseWriter, req *http.Request)
 	go io.Copy(master, wsc)
 
 	// enter into the container
-	process, err := container.Enter(enterRequest.Command, slave, slave, slave, nil)
+	process, err := container.Enter(enterRequest.AppName, &enterRequest.App, slave, slave, slave, nil)
 	if err != nil {
 		s.log.Errorf("Failed to enter container: %v", err)
 		http.Error(w, "Failed to enter container", 500)

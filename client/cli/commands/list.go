@@ -16,7 +16,7 @@ import (
 var (
 	ListCmd = &cobra.Command{
 		Use:   "list",
-		Short: "List running containers",
+		Short: "List running pods",
 		Run:   cmdList,
 	}
 )
@@ -31,34 +31,38 @@ func cmdList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	containers, err := cli.GetClient().ListContainers()
+	pods, err := cli.GetClient().ListPods()
 	if err != nil {
-		fmt.Printf("Failed to get list of containers: %v", err)
+		fmt.Printf("Failed to get list of pods: %v", err)
 		os.Exit(1)
 	}
 
 	// create the table
 	table := termtables.CreateTable()
 
-	table.AddHeaders("UUID", "Name", "State")
-	sort.Sort(sortedContainers(containers))
+	table.AddHeaders("UUID", "Name", "Apps", "State")
+	sort.Sort(sortedPods(pods))
 
-	for _, container := range containers {
-		var appName string
-		for _, app := range container.Pod.Apps {
-			appName = app.Name.String()
-			break
+	for n, pod := range pods {
+		for i, app := range pod.Pod.Apps {
+			if i == 0 {
+				table.AddRow(pod.UUID, pod.Name, app.Name.String(), pod.State)
+			} else {
+				table.AddRow("", "", app.Name.String(), "")
+			}
 		}
-		table.AddRow(container.UUID, appName, container.State)
+		if n < len(pods)-1 {
+			table.AddSeparator()
+		}
 	}
 	fmt.Printf("%s", table.Render())
 
 }
 
-type sortedContainers []*client.Container
+type sortedPods []*client.Pod
 
-func (a sortedContainers) Len() int      { return len(a) }
-func (a sortedContainers) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a sortedContainers) Less(i, j int) bool {
+func (a sortedPods) Len() int      { return len(a) }
+func (a sortedPods) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a sortedPods) Less(i, j int) bool {
 	return a[i].Pod.Apps[0].Name.String() < a[j].Pod.Apps[0].Name.String()
 }

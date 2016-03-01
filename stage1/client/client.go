@@ -13,6 +13,7 @@ import (
 
 	"github.com/apcera/util/wsconn"
 	"github.com/appc/spec/schema"
+	"github.com/appc/spec/schema/types"
 	"github.com/gorilla/rpc/v2/json2"
 	"github.com/gorilla/websocket"
 )
@@ -20,11 +21,11 @@ import (
 type Client interface {
 	Info() (*HostInfo, error)
 
-	CreateContainer(name, imageHash string, manifest *schema.ImageManifest) (*Container, error)
-	ListContainers() ([]*Container, error)
-	GetContainer(uuid string) (*Container, error)
-	DestroyContainer(uuid string) error
-	EnterContainer(uuid string, command ...string) (net.Conn, error)
+	CreatePod(name string, manifest *schema.PodManifest) (*Pod, error)
+	ListPods() ([]*Pod, error)
+	GetPod(uuid string) (*Pod, error)
+	DestroyPod(uuid string) error
+	EnterContainer(uuid string, appName string, app *types.App) (net.Conn, error)
 
 	CreateImage(reader io.Reader) (*Image, error)
 	ListImages() ([]*Image, error)
@@ -105,39 +106,39 @@ func (c *client) Info() (*HostInfo, error) {
 	return hostInfo, nil
 }
 
-func (c *client) CreateContainer(name, imageHash string, manifest *schema.ImageManifest) (*Container, error) {
-	req := &ContainerCreateRequest{Name: name, ImageHash: imageHash, Image: manifest}
-	var resp *ContainerResponse
-	err := c.execute("Containers.Create", req, &resp)
+func (c *client) CreatePod(name string, manifest *schema.PodManifest) (*Pod, error) {
+	req := &PodCreateRequest{Name: name, Pod: manifest}
+	var resp *PodResponse
+	err := c.execute("Pods.Create", req, &resp)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Container, nil
+	return resp.Pod, nil
 }
 
-func (c *client) ListContainers() ([]*Container, error) {
-	var resp *ContainerListResponse
-	err := c.execute("Containers.List", nil, &resp)
+func (c *client) ListPods() ([]*Pod, error) {
+	var resp *PodListResponse
+	err := c.execute("Pods.List", nil, &resp)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Containers, nil
+	return resp.Pods, nil
 }
 
-func (c *client) GetContainer(uuid string) (*Container, error) {
-	var resp *ContainerResponse
-	err := c.execute("Containers.Get", uuid, &resp)
+func (c *client) GetPod(uuid string) (*Pod, error) {
+	var resp *PodResponse
+	err := c.execute("Pods.Get", uuid, &resp)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Container, nil
+	return resp.Pod, nil
 }
 
-func (c *client) DestroyContainer(uuid string) error {
-	return c.execute("Containers.Destroy", uuid, nil)
+func (c *client) DestroyPod(uuid string) error {
+	return c.execute("Pods.Destroy", uuid, nil)
 }
 
-func (c *client) EnterContainer(uuid string, command ...string) (net.Conn, error) {
+func (c *client) EnterContainer(uuid string, appName string, app *types.App) (net.Conn, error) {
 	u, err := url.Parse(c.baseUrl)
 	if err != nil {
 		return nil, err
@@ -163,7 +164,7 @@ func (c *client) EnterContainer(uuid string, command ...string) (net.Conn, error
 	}
 
 	// build the runlist
-	er := ContainerEnterRequest{UUID: uuid, Command: command}
+	er := ContainerEnterRequest{UUID: uuid, AppName: appName, App: *app}
 	if err := ws.WriteJSON(er); err != nil {
 		return nil, err
 	}

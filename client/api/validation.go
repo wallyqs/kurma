@@ -9,28 +9,22 @@ import (
 	"github.com/appc/spec/schema"
 )
 
-func validateImageManifest(imageManifest *schema.ImageManifest) error {
-	if imageManifest.App == nil {
+func validatePodManifest(manifest *schema.PodManifest) error {
+	if len(manifest.Apps) == 0 {
 		return fmt.Errorf("the imageManifest must specify an App")
 	}
 
-	// Reject any containers that request host privilege. This can only be started
-	// with the local API, not remote API.
-	if iso := imageManifest.App.Isolators.GetByName(kschema.HostPrivilegedName); iso != nil {
-		if piso, ok := iso.Value().(*kschema.HostPrivileged); ok {
-			if *piso {
-				return fmt.Errorf("host privileged containers cannot be launched remotely")
-			}
+	for _, iso := range manifest.Isolators {
+		// Reject any containers that request host privilege. This can only be started
+		// with the local API, not remote API.
+		if iso.Name.String() == kschema.HostPrivilegedName {
+			return fmt.Errorf("host privileged containers cannot be launched remotely")
 		}
-	}
 
-	// Reject any containers that request host API access. This can only be
-	// started with the local API, not remote API.
-	if iso := imageManifest.App.Isolators.GetByName(kschema.HostApiAccessName); iso != nil {
-		if piso, ok := iso.Value().(*kschema.HostApiAccess); ok {
-			if *piso {
-				return fmt.Errorf("host API access containers cannot be launched remotely")
-			}
+		// Reject any containers that request host privilege. This can only be started
+		// with the local API, not remote API.
+		if iso.Name.String() == kschema.HostApiAccessName {
+			return fmt.Errorf("host API access containers cannot be launched remotely")
 		}
 	}
 

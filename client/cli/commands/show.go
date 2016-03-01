@@ -14,7 +14,7 @@ import (
 var (
 	ShowCmd = &cobra.Command{
 		Use:   "show UUID",
-		Short: "Show a running container",
+		Short: "Show a running pod",
 		Run:   cmdShow,
 	}
 )
@@ -25,23 +25,23 @@ func init() {
 
 func cmdShow(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
-		fmt.Printf("Must specify the UUID of the container to show.\n")
+		fmt.Printf("Must specify the UUID of the pod to show.\n")
 		cmd.Help()
 		return
 	}
 
-	container, err := cli.GetClient().GetContainer(args[0])
+	pod, err := cli.GetClient().GetPod(args[0])
 	if err != nil {
-		fmt.Printf("Failed to retrieve container: %v\n", err)
+		fmt.Printf("Failed to retrieve pod: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Container %s:\n\n", container.UUID)
+	fmt.Printf("Pod %s:\n\n", pod.UUID)
 
 	// convert back with pretty mode
-	b, err := json.MarshalIndent(container, "", "  ")
+	b, err := json.MarshalIndent(pod, "", "  ")
 	if err != nil {
-		fmt.Printf("Failed to marshal container: %v\n", err)
+		fmt.Printf("Failed to marshal pod: %v\n", err)
 		os.Exit(1)
 	}
 	fmt.Printf("%s\n", string(b))
