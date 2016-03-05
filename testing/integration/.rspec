@@ -1,0 +1,5 @@
+--require rspec/legacy_formatters
+--require kurma
+--require rspec-prof
+--format RSpec::DocInstafail
+--color

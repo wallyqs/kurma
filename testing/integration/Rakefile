@@ -1,0 +1,25 @@
+require 'bundler'
+Bundler.setup
+
+require 'open3'
+require 'fileutils'
+require 'rspec/core/rake_task'
+require_relative 'lib/kurma/rspec_runner'
+
+STDOUT.sync
+
+desc "Run reasonable set of tests with debug output"
+task :debug do |t, args|
+  RspecRunner.new({
+    debug: true,
+  }).run(t)
+end
+
+desc "Run tests matching regexp"
+task :regexp, [:actual_regexp] do |t, args|
+  RspecRunner.new.regexp(t)
+end
+
+task :spec do |t, args|
+  RspecRunner.new.run(t, nil)
+end

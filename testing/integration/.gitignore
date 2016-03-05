@@ -1,0 +1,13 @@
+# Ignore .rvmrc
+.rvmrc
+.rbenv-gemsets
+
+# Ignore logs
+log/*.log
+.rvmrc
+
+# Ignore JUnit xml report
+test_results.xml
+
+# Ignore profiling info.
+profiles/**/*
