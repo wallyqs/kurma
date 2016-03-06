@@ -4,7 +4,7 @@ package client
 
 import (
 	"bytes"
-	ejson "encoding/json"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -13,7 +13,7 @@ import (
 
 	"github.com/apcera/util/wsconn"
 	"github.com/appc/spec/schema"
-	"github.com/gorilla/rpc/json"
+	"github.com/gorilla/rpc/v2/json2"
 	"github.com/gorilla/websocket"
 )
 
@@ -99,7 +99,7 @@ func (c *client) Info() (*HostInfo, error) {
 	}
 
 	var hostInfo *HostInfo
-	if err := ejson.NewDecoder(resp.Body).Decode(&hostInfo); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&hostInfo); err != nil {
 		return nil, err
 	}
 	return hostInfo, nil
@@ -196,7 +196,7 @@ func (c *client) CreateImage(reader io.Reader) (*Image, error) {
 	}
 
 	var imageResp *ImageResponse
-	if err := ejson.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
 		return nil, err
 	}
 	return imageResp.Image, nil
@@ -225,7 +225,7 @@ func (c *client) DeleteImage(hash string) error {
 }
 
 func (c *client) execute(cmd string, args, reply interface{}) error {
-	buf, err := json.EncodeClientRequest(cmd, args)
+	buf, err := json2.EncodeClientRequest(cmd, args)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func (c *client) execute(cmd string, args, reply interface{}) error {
 	defer resp.Body.Close()
 
 	if reply != nil {
-		return json.DecodeClientResponse(resp.Body, reply)
+		return json2.DecodeClientResponse(resp.Body, reply)
 	} else {
 		return nil
 	}

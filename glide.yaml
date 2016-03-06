@@ -40,7 +40,7 @@ import:
 - package: github.com/gorilla/mux
 - package: github.com/gorilla/rpc
   subpackages:
-  - json
+  - v2/json2
 - package: github.com/gorilla/websocket
 - package: github.com/kr/pty
 - package: github.com/spf13/cobra

@@ -9,8 +9,8 @@ import (
 	"github.com/apcera/kurma/stage1/client"
 	"github.com/apcera/logray"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/rpc"
-	"github.com/gorilla/rpc/json"
+	rpc "github.com/gorilla/rpc/v2"
+	"github.com/gorilla/rpc/v2/json2"
 )
 
 // Options devices the configuration fields that can be passed to New() when
@@ -56,7 +56,7 @@ func (s *Server) Start() error {
 	}
 
 	svr := rpc.NewServer()
-	svr.RegisterCodec(json.NewCodec(), "application/json")
+	svr.RegisterCodec(json2.NewCodec(), "application/json")
 	svr.RegisterService(&ContainerService{server: s}, "Containers")
 	svr.RegisterService(&ImageService{server: s}, "Images")
 
