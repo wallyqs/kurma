@@ -29,7 +29,7 @@ var (
 // RetrieveImage can be used to retrieve a remote image, and optionally discover
 // an image based on the App Container Image Discovery specification. Supports
 // handling local images as well as
-func RetrieveImage(imageUri string, insecure bool) (tempfile.ReadSeekCloser, error) {
+func RetrieveImage(imageUri string, labels map[types.ACIdentifier]string, insecure bool) (tempfile.ReadSeekCloser, error) {
 	u, err := url.Parse(imageUri)
 	if err != nil {
 		return nil, err
@@ -87,6 +87,9 @@ func RetrieveImage(imageUri string, insecure bool) (tempfile.ReadSeekCloser, err
 		if err != nil {
 			return nil, err
 		}
+		for k, v := range labels {
+			app.Labels[k] = v
+		}
 
 		endpoints, _, err := discovery.DiscoverEndpoints(*app, nil, insecureOption)
 		if err != nil {
@@ -94,7 +97,7 @@ func RetrieveImage(imageUri string, insecure bool) (tempfile.ReadSeekCloser, err
 		}
 
 		for _, ep := range endpoints.ACIEndpoints {
-			r, err := RetrieveImage(ep.ACI, insecure)
+			r, err := RetrieveImage(ep.ACI, nil, insecure)
 			if err != nil {
 				continue
 			}
@@ -133,7 +136,7 @@ func LoadImage(imageUri string, insecure bool, imageManager stage1.ImageManager)
 		}
 	}
 
-	f, err := RetrieveImage(imageUri, insecure)
+	f, err := RetrieveImage(imageUri, nil, insecure)
 	if err != nil {
 		return "", nil, err
 	}
