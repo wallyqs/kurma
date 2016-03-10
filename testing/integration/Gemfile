@@ -1,0 +1,10 @@
+source "https://rubygems.org"
+
+gem "rake"
+gem "rspec", "~> 3.1.0"
+gem "jsonrpc-client"
+gem "net_http_unix"
+gem "httparty"
+gem "yarjuf", :git => "https://github.com/apcera/yarjuf"
+gem "rspec-legacy_formatters"
+gem 'rspec-prof', :git => "https://github.com/sinisterchipmunk/rspec-prof"

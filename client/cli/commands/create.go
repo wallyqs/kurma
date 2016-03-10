@@ -11,6 +11,7 @@ import (
 	"github.com/apcera/kurma/util/aciremote"
 	"github.com/apcera/util/tempfile"
 	"github.com/appc/spec/schema"
+	"github.com/appc/spec/schema/types"
 	"github.com/spf13/cobra"
 )
 
@@ -60,7 +61,16 @@ func cmdCreate(cmd *cobra.Command, args []string) {
 	f, err := os.Open(args[0])
 	if err != nil {
 		if os.IsNotExist(err) {
-			f, err = aciremote.RetrieveImage(args[0], true)
+			info, err := cli.GetClient().Info()
+			if err != nil {
+				fmt.Printf("Failed to retrieve host information: %v\n", err)
+				os.Exit(1)
+			}
+			labels := make(map[types.ACIdentifier]string)
+			labels[types.ACIdentifier("os")] = "linux"
+			labels[types.ACIdentifier("arch")] = info.Arch
+
+			f, err = aciremote.RetrieveImage(args[0], labels, true)
 			if err != nil {
 				fmt.Printf("Failed to retrieve the container image: %v\n", err)
 				os.Exit(1)
