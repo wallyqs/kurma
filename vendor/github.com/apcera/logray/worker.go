@@ -13,7 +13,7 @@ var transitChannel chan backgroundWorker
 // This is used to schedule a background flush.
 type backgroundFlusher struct {
 	logger     *Logger
-	updateChan chan bool
+	updateChan chan struct{}
 }
 
 // Called in order to flush all output's associated with the logger.
@@ -25,7 +25,7 @@ func (b *backgroundFlusher) Process() {
 		o.Output.Flush()
 	}
 	if b.updateChan != nil {
-		b.updateChan <- true
+		close(b.updateChan)
 	}
 }
 
