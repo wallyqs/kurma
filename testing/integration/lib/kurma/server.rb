@@ -33,9 +33,6 @@ class Kurma::Server
     ENV["KURMA_HOST"] = File.join(@tmpdir, "kurma.sock")
 
     wait_for_socket
-
-    # FIXME have daemon do this!
-    %x{sudo chmod 666 #{ENV["KURMA_HOST"]}}
   end
 
   def stop

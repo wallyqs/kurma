@@ -3,7 +3,7 @@
 package init
 
 import (
-	"github.com/apcera/kurma/networking/types"
+	"github.com/apcera/kurma/pkg/networkmanager/types"
 )
 
 type kurmaConfig struct {
@@ -18,8 +18,8 @@ type kurmaConfig struct {
 	ParentCgroupName   string                    `json:"parent_cgroup_name,omitempty"`
 	RequiredNamespaces []string                  `json:"required_namespaces,omitempty"`
 	Services           kurmaServices             `json:"services,omitempty"`
-	InitContainers     []string                  `json:"init_containers,omitempty"`
-	ContainerNetworks  []*types.NetConf          `json:"container_networks,omitempty"`
+	InitPods           []string                  `json:"init_pods,omitempty"`
+	PodNetworks        []*types.NetConf          `json:"pod_networks,omitempty"`
 }
 
 type OEMConfig struct {
@@ -58,9 +58,9 @@ const (
 	kurmaPathPods    = kurmaPathUsage("pods")
 	kurmaPathVolumes = kurmaPathUsage("volumes")
 
-	kurmaPath            = "/var/kurma"
-	mountPath            = "/mnt"
-	systemContainersPath = "/var/kurma/system"
+	kurmaPath      = "/var/kurma"
+	mountPath      = "/mnt"
+	systemPodsPath = "/var/kurma/system"
 )
 
 type kurmaServices struct {
@@ -137,9 +137,9 @@ func (cfg *kurmaConfig) mergeConfig(o *kurmaConfig) {
 		cfg.ParentCgroupName = o.ParentCgroupName
 	}
 
-	// append init containers
-	if len(o.InitContainers) > 0 {
-		cfg.InitContainers = append(cfg.InitContainers, o.InitContainers...)
+	// append init pods
+	if len(o.InitPods) > 0 {
+		cfg.InitPods = append(cfg.InitPods, o.InitPods...)
 	}
 
 	// NTP
@@ -175,8 +175,8 @@ func (cfg *kurmaConfig) mergeConfig(o *kurmaConfig) {
 		cfg.Services.Console.SSHKeys = o.Services.Console.SSHKeys
 	}
 
-	// container networks
-	if len(o.ContainerNetworks) > 0 {
-		cfg.ContainerNetworks = append(cfg.ContainerNetworks, o.ContainerNetworks...)
+	// pod networks
+	if len(o.PodNetworks) > 0 {
+		cfg.PodNetworks = append(cfg.PodNetworks, o.PodNetworks...)
 	}
 }
