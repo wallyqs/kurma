@@ -292,6 +292,17 @@ func (logger *Logger) log(logClass LogClass, message string) {
 	transitChannel <- b
 }
 
+// Flush is used to ensure the logger has flushed all queued log lines to its
+// outputs before returning.
+func (logger *Logger) Flush() {
+	b := &backgroundFlusher{
+		logger:     logger,
+		updateChan: make(chan struct{}),
+	}
+	transitChannel <- b
+	<-b.updateChan
+}
+
 // newLineData creates the struct that wraps a log message and will capture the
 // source of the logging message from the stack.
 func (logger *Logger) newLineData(logClass LogClass, message string) *LineData {

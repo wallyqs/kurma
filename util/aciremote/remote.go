@@ -71,7 +71,15 @@ func RetrieveImage(imageUri string, labels map[types.ACIdentifier]string, insecu
 		}
 		defer os.RemoveAll(tmpdir)
 
-		acis, err := docker2aci.Convert(dockerName, true, tmpdir, tmpdir, docker2acicommon.NoCompression, "", "", insecure)
+		acis, err := docker2aci.ConvertRemoteRepo(dockerName, docker2aci.RemoteConfig{
+			CommonConfig: docker2aci.CommonConfig{
+				Squash:      true,
+				OutputDir:   tmpdir,
+				TmpDir:      tmpdir,
+				Compression: docker2acicommon.NoCompression,
+			},
+			Insecure: insecure,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert Docker image: %v", err)
 		}
