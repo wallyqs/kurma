@@ -6,4 +6,4 @@ ENV TMPDIR /tmp
 
 # Run the build.
 COPY build.sh /tmp/
-RUN /tmp/build.sh && rm /tmp/build.sh
+RUN chmod a+x /tmp/build.sh && /tmp/build.sh && rm /tmp/build.sh
