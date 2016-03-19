@@ -65,7 +65,9 @@ emerge \
     sys-apps/hwids \
     sys-fs/eudev
 
-# rebuild util-linux so it has static libraries
+# Rebuild util-linux so it has static libraries. First need to remove
+# mount/umount to avoid Gentoo errors about suspicious suid hardlinks.
+rm -f /bin/mount /bin/umount
 emerge sys-apps/util-linux
 
 # install acbuild, for creating aci images
