@@ -1,0 +1,25 @@
+---
+name: apcera.com/kurma/console
+app:
+  exec:
+  - /start.sh
+  user: "0"
+  group: "0"
+  environment:
+  - name: PATH
+    value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+  - name: TMPDIR
+    value: /tmp
+  isolators:
+  - name: host/privileged
+    value: true
+  - name: host/api-access
+    value: true
+  - name: os/linux/privileged
+    value: true
+  - name: os/linux/namespaces
+    value:
+      net: host
+      uts: host
+dependencies:
+  - imageName: apcera.com/kurma/busybox
