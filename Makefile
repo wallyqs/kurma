@@ -60,7 +60,7 @@ stager/container: bin/stager-container.aci
 .PHONY: kurma-api
 kurma-api:
 	$(DOCKER) go build -o ${BASEPATH}/bin/$@ cmd/kurma-api.go
-  $(DOCKER) ./build/aci/kurma-api/build.sh ./bin/$@
+	$(DOCKER) ./build/aci/kurma-api/build.sh ./bin/$@
 
 ## kurma-upgrader
 bin/kurma-upgrader: util/installer/installer.go
