@@ -20,8 +20,6 @@ kurma-server:
 	go build -o ${BASEPATH}/bin/$@ cmd/kurma-server.go
 kurma-init:
 	go build -o ${BASEPATH}/bin/$@ cmd/kurma-init.go
-.PHONY: local
-local: kurma-cli kurma-server
 
 #
 # kurmaOS init image
@@ -42,6 +40,7 @@ bin/stager-container.aci: bin/stager-container-main bin/stager-container-init bi
 	./build/aci/kurma-stager-container/build.sh $@
 .PHONY: stager/container
 stager/container: bin/stager-container.aci
+
 
 #
 # ACI Images
@@ -77,6 +76,7 @@ bin/cni-netplugin.aci: bin/busybox.aci bin/cni-netplugin-setup
 .PHONY: cni-netplugin-aci
 cni-netplugin-aci: bin/cni-netplugin.aci
 
+
 #
 # Testing
 #
@@ -84,3 +84,5 @@ cni-netplugin-aci: bin/cni-netplugin.aci
 test:
 	go test -i $(PKG)
 	go test -v $(PKG)
+.PHONY: local
+local: kurma-cli kurma-server stager/container
