@@ -1,6 +1,1 @@
-*.aci
-kurma-api
-kurma-cli
-kurma-init
-kurma-server
 *.test

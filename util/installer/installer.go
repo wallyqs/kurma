@@ -12,7 +12,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/apcera/kurma/util"
+	"github.com/apcera/kurma/pkg/devices"
 )
 
 type bootPart int
@@ -87,7 +87,7 @@ func getCurrentBootedPartition() (string, error) {
 		return "", err
 	}
 
-	dev := util.ResolveDevice(bootedStr)
+	dev := devices.ResolveDevice(bootedStr)
 	if dev == "" {
 		return "", fmt.Errorf("Failed to resolve booted partition of %q", bootedStr)
 	}
@@ -95,11 +95,11 @@ func getCurrentBootedPartition() (string, error) {
 }
 
 func determineDestinationImage(bootedDev string) (bootPart, string, error) {
-	adev := util.ResolveDevice("PARTLABEL=KURMA-A")
+	adev := devices.ResolveDevice("PARTLABEL=KURMA-A")
 	if adev == "" {
 		return bootPart(0), "", fmt.Errorf("Failed to locate KURMA-A boot partition")
 	}
-	bdev := util.ResolveDevice("PARTLABEL=KURMA-B")
+	bdev := devices.ResolveDevice("PARTLABEL=KURMA-B")
 	if bdev == "" {
 		return bootPart(0), "", fmt.Errorf("Failed to locate KURMA-B boot partition")
 	}
@@ -120,7 +120,7 @@ const mountPath = "/mnt"
 
 func writeKernelImage(dest bootPart) error {
 	// locate the partition with the kernels
-	efiDevice := util.ResolveDevice("LABEL=EFI-SYSTEM")
+	efiDevice := devices.ResolveDevice("LABEL=EFI-SYSTEM")
 	if efiDevice == "" {
 		return fmt.Errorf("Failed to locate the EFI-SYSTEM partition")
 	}
@@ -168,11 +168,11 @@ func writeKernelImage(dest bootPart) error {
 }
 
 func updateGptPriority(newbootdev string) error {
-	rawdev := util.GetRawDevice(newbootdev)
+	rawdev := devices.GetRawDevice(newbootdev)
 	if rawdev == "" {
 		return fmt.Errorf("Failed to find raw device for %q", newbootdev)
 	}
-	partnum := util.GetPartitionNumber(newbootdev)
+	partnum := devices.GetPartitionNumber(newbootdev)
 	if partnum == "" {
 		return fmt.Errorf("Failed to find partition number for %q", newbootdev)
 	}
@@ -191,7 +191,7 @@ func updateGptPriority(newbootdev string) error {
 
 func bootNewKernel(img bootPart, newdev string) error {
 	// locate the partition with the kernels
-	efiDevice := util.ResolveDevice("LABEL=EFI-SYSTEM")
+	efiDevice := devices.ResolveDevice("LABEL=EFI-SYSTEM")
 	if efiDevice == "" {
 		return fmt.Errorf("Failed to resolve EFI-SYSTEM partition")
 	}

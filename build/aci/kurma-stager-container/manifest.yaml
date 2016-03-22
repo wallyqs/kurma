@@ -1,0 +1,11 @@
+---
+name: apcera.com/kurma/stager/container
+app:
+  exec:
+  - /stager
+  user: "0"
+  group: "0"
+  workingDirectory: /
+  environment:
+  - name: PATH
+    value: /bin

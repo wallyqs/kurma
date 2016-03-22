@@ -10,22 +10,30 @@ extensible through deploying additional containers for extensibility.
 
 Networking plugins are packaged as containers that get deployed to a Kurma host.
 
+## Instrumentation
+
+Within Kurma, it will instrument a networking pod which contains a set of
+containers which each correspond to a network definition. The networking pod is
+setup such that the containers within it have elevated host priviledge in order
+for them to be able to configure networking on other pods.
+
+When Kurma is launching a new pod, it can be given a list of networks it should
+be associated with. Kurma will then call in to the containers corresponding to
+those networks within the networking pod and have them set up the networking.
+
 ## Kurma Configuration
 
-Kurma's configuration includes a `container_networks` section with specifies a
-list of available networks, where to locate the container image for them, and
-their own configuration.
+Kurma's configuration includes a `pod_networks` section with specifies a list of
+available networks, where to locate the container image for them, and their own
+configuration.
 
 ```
 {
-  "container_networks": [
-    {
-      "name": "lo",
-      "aci": "apcera.com/kurma/lo-netplugin"
-    },
+  "pod_networks": [
     {
       "name": "mynet",
       "aci": "apcera.com/kurma/cni-netplugin",
+      "default": true,
       "containerInterface": "eth0",
       "type": "bridge",
       "bridge": "mynet0",
@@ -44,9 +52,8 @@ their own configuration.
 The above example configures both loopback and a `mynet` network for
 containers. The parts of the configuration that are relevant to Kurma include:
 
-* `name` - This specifies a unique identifier for the network. When containers
-  are launched, they can include a list of networks to attach and uses this
-  name.
+* `name` - This specifies a unique identifier for the network. When pods are
+  launched, they can include a list of networks to attach and uses this name.
 * `aci` - This specifies how to locate the image for the networking
   plugin. Options for this field include:
   * `file:///path/to/image.aci` - A `file://` uri can be used to specify an
@@ -56,6 +63,9 @@ containers. The parts of the configuration that are relevant to Kurma include:
   * `docker:///user/plugin-name:tag` - The `docker://` uri can be used to
     retrieve a Docker image from a repository. If using a repository other than
     the Docker Hub, specify the hostname in the URL.
+* `default` - This specifies whether Kurma should attach a new pod to this
+  network by default. These will be used only when there isn't a specific set of
+  networks being requested for the pod.
 * `containerInterface` - This specifies the name of the interface to configure
   within the container. It can be omitted on plugins where it isn't relevant,
   such as with the loopback plugin. However Kurma can dynamically generate it
@@ -74,11 +84,14 @@ configuration of the CNI plugins themselves, see the
 
 ## The Container and The API
 
-Kurma will structure the container for networking plugins to ensure that they
-share the host's UPC, network, PID, and UTS namespace. This helps to ensure that
-the network plugins are able to configure the network on both the host's side,
-and by sharing the PID namespace, is able to `setns` into the network namespace
-for the target container and configure the interface on its side.
+Kurma sets up a specific networking pod which contains containers for all of the
+networks defined. It configures the pod to ensure that they share the host's
+IPC, network, and UTS namespace. This helps to ensure that the network plugins
+are able to configure the network on both the host's side. It will also attach a
+specific volume which is used to contain persistent references to network
+namespaces that are created for newly launched pods. This can be used for a
+plugin to `setns` into the network namespace for the target pod and configure
+the interface on its side.
 
 The network plugins will still have its own mount namespace and have its own
 filesystem available to it.
@@ -86,34 +99,15 @@ filesystem available to it.
 The plugins work by instrumenting three executables within the container
 image. They are:
 
-* `/opt/network/setup` at initialization for any necessary setup tasks.
 * `/opt/network/add` to configure the networking on a new container.
 * `/opt/network/del` to deprovision/cleanup when a container shuts down.
 
 These scripts will be invoked as the root user to ensure they have access to
 configure both the host and the container.
 
-With all three executables, the configuration for the plugin will be passed in
-over `stdin`. Command line arguments are also provided for `add` and `del` with
-information on the container being set up.
-
-#### `setup`
-
-The `setup` step is called when the daemon is initializing the plugin. It will
-provide the configuration over `stdin` and provides no arguments. It does not
-expect any output on success, only that the script will exit `0`. Any non-zero
-exit code will be viewed as an error, and it will capture `stdout`/`stderr` for
-the error message.
-
-It may be invoked multiple times if the daemon is restart. It should account for
-validating its own health, where future calls may be used to re-validate its
-general state.
-
-The executable is given an upper limit of 1 minute to return, otherwise it will
-be considered errored and torn down.
-
-If the networking plugin needs any background processes running, it can execute
-them and double fork to become independent of the setup executable.
+With all executables, the configuration for the plugin will be passed in over
+`stdin`. Command line arguments are also provided with information on the
+pod being set up.
 
 #### `add`
 
@@ -195,6 +189,20 @@ locking that may be necessary.
 
 The executable is given an upper limit of 1 minute to return, otherwise it will
 be considered errored.
+
+## Main Executable
+
+The ACI image for the networking plugin is expected to have a main executeable
+defined in the `exec` field of the `app` section. This program will be ran on
+start of the plugin and is expected to remain running indefinitely. If it exits,
+Kurma will assume the plugin has failed.
+
+The main executable is intended to act as a setup point for the container. It
+will be given the plugin's configuration over `stdin` and provides no arguments
+as with the other executables. It does not expect any output.
+
+If the networking plugin needs any background processes running, it can execute
+them if necessary.
 
 ## Special Considerations
 

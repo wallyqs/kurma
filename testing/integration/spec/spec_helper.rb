@@ -23,13 +23,14 @@ RSpec.configure do |config|
 
   config.include TestHelpers
 
-  config.before(:all) do
-    @server = Kurma::Server.new
-    @server.start
+  server = Kurma::Server.new
+
+  config.before(:suite) do
+    server.start
   end
 
-  config.after(:all) do
-    @server.stop
+  config.after(:suite) do
+    server.stop
   end
 
   config.before(:each) do

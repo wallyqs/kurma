@@ -1,0 +1,19 @@
+---
+name: apcera.com/kurma/upgrader
+app:
+  exec:
+  - /kurma-upgrader
+  user: "0"
+  group: "0"
+  isolators:
+  - name: host/api-access
+    value: true
+  - name: host/privileged
+    value: true
+  - name: os/linux/namespaces
+    value:
+      ipc: host
+      net: host
+      uts: host
+  - name: os/linux/privileged
+    value: true
