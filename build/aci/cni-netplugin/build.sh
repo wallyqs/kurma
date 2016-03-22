@@ -13,6 +13,11 @@ git clone https://github.com/appc/cni.git $cnidir/cni
 version=$(cd $cnidir/cni/.git && git describe --tags)
 (cd $cnidir/cni && ./build)
 
+# if we're running in TeamCity, then export the version information.
+if [ -n "$TC_BUILD_NUMBER" ]; then
+    echo "##teamcity[buildNumber '$version']"
+fi
+
 dir=$(mktemp -d)
 trap "rm -rf $dir" EXIT
 chmod 755 $dir
