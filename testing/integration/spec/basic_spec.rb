@@ -11,9 +11,8 @@ end
 
 RSpec.describe "Empty system" do
   it "should list no containers" do
-    resp = api.list_containers
+    resp = api.list_pods
     expect(resp).to be_kind_of(Hash)
-    expect(resp).to have_key("containers")
-    expect(resp["containers"]).to be_empty
+    expect(resp).to have_key("pods")
   end
 end

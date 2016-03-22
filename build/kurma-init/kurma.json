@@ -1,0 +1,66 @@
+{
+  "oem_config": { "device": "LABEL=OEM", "config_path": "/kurma_oem.json" },
+  "hostname": "kurmaos",
+  "parent_cgroup_name": "kurma",
+  "modules": [
+    "nf_nat",
+    "bridge",
+    "br_netfilter",
+    "nf_conntrack_ipv4",
+    "xt_addrtype",
+    "ipt_MASQUERADE",
+    "xt_conntrack",
+    "iptable_nat",
+    "iptable_filter",
+    "veth"
+  ],
+  "disks": [
+    { "device": "LABEL=ROOT",
+      "fstype": "ext4",
+      "options": "data=ordered,commit=5",
+      "usage":  [ "images", "pods", "volumes" ],
+      "resize": true
+    }
+  ],
+  "network_config": {
+    "interfaces": [
+      { "device": "lo", "address": "127.0.0.1/8" },
+      { "device": "eth.+", "dhcp": true }
+    ]
+  },
+  "services": {
+    "udev": {
+      "enabled": true,
+      "aci": "file:///acis/udev.aci"
+    },
+    "ntp": {
+      "enabled": true,
+      "aci": "apcera.com/kurma/ntp",
+      "servers": [ "0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org", "3.pool.ntp.org" ]
+    },
+    "console": {
+      "enabled": true,
+      "aci": "apcera.com/kurma/console",
+      "password": "kurma"
+    }
+  },
+  "init_containers": [
+    "apcera.com/kurma/api"
+  ],
+  "container_networks": [
+    {
+      "name": "bridge",
+      "aci": "apcera.com/kurma/cni-netplugin",
+      "containerInterface": "veth+{{shortuuid}}",
+      "type": "bridge",
+      "bridge": "bridge0",
+      "isGateway": true,
+      "ipMasq": true,
+      "ipam": {
+        "type": "host-local",
+        "subnet": "10.220.0.0/16",
+        "routes": [ { "dst": "0.0.0.0/0" } ]
+      }
+    }
+  ]
+}

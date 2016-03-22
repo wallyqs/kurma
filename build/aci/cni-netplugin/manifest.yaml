@@ -1,0 +1,17 @@
+---
+name: apcera.com/kurma/cni-netplugin
+app:
+  exec:
+  - /opt/network/setup
+  user: "0"
+  group: "0"
+  environment:
+  - name: PATH
+    value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+  - name: TMPDIR
+    value: /tmp
+  isolators:
+  - name: os/linux/privileged
+    value: true
+dependencies:
+  - imageName: apcera.com/kurma/busybox

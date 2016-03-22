@@ -17,25 +17,59 @@ class Kurma::Server
     ENV["KURMAD_LOGFILE"] || File.join(Dir.pwd, "log", "kurma-server.log")
   end
 
+  def write_configuration(tmppath, builddir)
+    cfgfile = File.join(tmppath, "kurmad.yml")
+    File.open(cfgfile, "w") do |f|
+      f.puts %Q{---
+socketPath: #{tmppath}/kurma.sock
+socketPermissions: 0666
+
+parentCgroupName: kurma
+podsDirectory: #{tmppath}/pods
+imagesDirectory: #{tmppath}/images
+volumesDirectory: #{tmppath}/volumes
+defaultStagerImage: file:///#{builddir}/bin/stager-container.aci
+
+prefetchImages:
+- file:///#{builddir}/bin/busybox.aci
+
+podNetworks:
+- name: bridge
+  aci: "file:///#{builddir}/bin/cni-netplugin.aci"
+  default: true
+  containerInterface: "veth+{{shortuuid}}"
+  type: bridge
+  bridge: bridge0
+  isGateway: true
+  ipMasq: true
+  ipam:
+    type: host-local
+    subnet: 10.220.0.0/16
+    routes: [ { dst: 0.0.0.0/0 } ]
+      }
+    end
+    cfgfile
+  end
+
   def start
     @tmpdir = Dir.mktmpdir
+    builddir = File.join(File.dirname(__FILE__), "..", "..", "..", "..")
+    cfgfile = self.write_configuration(@tmpdir, builddir)
+
     @pid = fork do
-      logfile = File.open(self.kurma_logfile, "w+")
+      logfile = File.open(self.kurma_logfile, "a")
       Dir.chdir(@tmpdir) do
         %w( pods images volumes ).each { |d| Dir.mkdir(d) }
         $stdin.reopen("/dev/null")
         $stdout.reopen(logfile)
         $stderr.reopen(logfile)
-        exec "sudo #{self.kurma_binary}"
+        exec "sudo #{self.kurma_binary} -configFile #{cfgfile}"
       end
     end
     Process.detach(@pid)
+
     ENV["KURMA_HOST"] = File.join(@tmpdir, "kurma.sock")
-
     wait_for_socket
-
-    # FIXME have daemon do this!
-    %x{sudo chmod 666 #{ENV["KURMA_HOST"]}}
   end
 
   def stop

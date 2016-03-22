@@ -5,7 +5,7 @@ package init
 import (
 	"fmt"
 
-	"github.com/apcera/kurma/stage1"
+	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/logray"
 )
 
@@ -13,11 +13,11 @@ import (
 // system. It will take of the running of the process once init.Run() is
 // invoked.
 type runner struct {
-	config           *kurmaConfig
-	log              *logray.Logger
-	containerManager stage1.ContainerManager
-	imageManager     stage1.ImageManager
-	networkManager   stage1.NetworkManager
+	config         *kurmaConfig
+	log            *logray.Logger
+	podManager     backend.PodManager
+	imageManager   backend.ImageManager
+	networkManager backend.NetworkManager
 }
 
 // Run takes over the process and launches KurmaOS.
@@ -30,8 +30,8 @@ func Run() error {
 }
 
 // Run handles executing the bootstrap setup. This prepares the current host
-// environment to run and manage containers. It will return an error if any part
-// of the setup fails.
+// environment to run and manage pods. It will return an error if any part of
+// the setup fails.
 func (r *runner) Run() error {
 	r.log.Info("Launching KurmaOS\n\n")
 

@@ -18,7 +18,7 @@ class Kurma::ApiClient
     @client = JSONRPC::Client.new('http://example.com/rpc')
   end
 
-  def list_containers
-    @client.invoke("Containers.List", [])
+  def list_pods
+    @client.invoke("Pods.List", [])
   end
 end

@@ -18,17 +18,19 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/apcera/kurma/stage1/container"
-	"github.com/apcera/kurma/stage1/graphstorage/overlay"
-	"github.com/apcera/kurma/stage1/image"
-	"github.com/apcera/kurma/stage1/network"
-	"github.com/apcera/kurma/stage1/server"
-	"github.com/apcera/kurma/util"
-	"github.com/apcera/kurma/util/aciremote"
+	"github.com/apcera/kurma/pkg/aciremote"
+	"github.com/apcera/kurma/pkg/backend"
+	"github.com/apcera/kurma/pkg/daemon"
+	"github.com/apcera/kurma/pkg/devices"
+	"github.com/apcera/kurma/pkg/imagestore"
+	"github.com/apcera/kurma/pkg/networkmanager"
+	"github.com/apcera/kurma/pkg/podmanager"
 	"github.com/apcera/logray"
 	"github.com/apcera/util/proc"
 	"github.com/apcera/util/tarhelper"
 	"github.com/appc/spec/discovery"
+	"github.com/appc/spec/schema"
+	"github.com/appc/spec/schema/types"
 	"github.com/vishvananda/netlink"
 )
 
@@ -112,12 +114,12 @@ func (r *runner) loadConfigurationFile() error {
 
 	// if an OEM config is specified, attempt to find it
 	if r.config.OEMConfig != nil {
-		device := util.ResolveDevice(r.config.OEMConfig.Device)
+		device := devices.ResolveDevice(r.config.OEMConfig.Device)
 		if device == "" {
 			r.log.Warnf("Unable to resolve oem config device %q, skipping", r.config.OEMConfig.Device)
 			return nil
 		}
-		fstype, _ := util.GetFsType(device)
+		fstype, _ := devices.GetFsType(device)
 
 		// FIXME check fstype against currently supported types
 
@@ -296,12 +298,12 @@ func (r *runner) mountDisks() error {
 
 	// do the stuff
 	for _, disk := range r.config.Disks {
-		device := util.ResolveDevice(disk.Device)
+		device := devices.ResolveDevice(disk.Device)
 		if device == "" {
 			r.log.Warnf("Unable to resolve device %q, skipping", disk.Device)
 			continue
 		}
-		fstype, _ := util.GetFsType(device)
+		fstype, _ := devices.GetFsType(device)
 
 		// FIXME check fstype against currently supported types
 
@@ -356,7 +358,7 @@ func (r *runner) mountDisks() error {
 // mounted.
 func (r *runner) rescanImages() error {
 	if err := r.imageManager.Rescan(); err != nil {
-		return fmt.Errorf("Failed to scan for existing container images: %v", err)
+		return fmt.Errorf("Failed to scan for existing pod images: %v", err)
 	}
 	return nil
 }
@@ -526,8 +528,8 @@ func (r *runner) createDirectories() error {
 	if err := os.MkdirAll(volumesPath, os.FileMode(0755)); err != nil {
 		return fmt.Errorf("failed to create volumes directory: %v", err)
 	}
-	if err := os.MkdirAll(systemContainersPath, os.FileMode(0755)); err != nil {
-		return fmt.Errorf("failed to create system containers directory: %v", err)
+	if err := os.MkdirAll(systemPodsPath, os.FileMode(0755)); err != nil {
+		return fmt.Errorf("failed to create system pods directory: %v", err)
 	}
 	return nil
 }
@@ -564,73 +566,80 @@ func (r *runner) displayNetwork() error {
 }
 
 // createImageManager creates the image manager that is used to store and
-// handles provisioning of new container mount namespaces.
+// handles provisioning of new pod mount namespaces.
 func (r *runner) createImageManager() error {
-	storage, err := overlay.New()
-	if err != nil {
-		return err
-	}
-	iopts := &image.Options{
+	iopts := &imagestore.Options{
 		Directory: filepath.Join(kurmaPath, string(kurmaPathImages)),
+		Log:       r.log.Clone(),
 	}
-	imageManager, err := image.New(storage, iopts)
+	imageManager, err := imagestore.New(iopts)
 	if err != nil {
 		return fmt.Errorf("failed to create the image manager: %v", err)
 	}
-	imageManager.SetLog(r.log.Clone())
 	r.imageManager = imageManager
 	return nil
 }
 
-// createContainerManager creates the container manager to allow containers to be
+// createPodManager creates the pod manager to allow pods to be
 // launched.
-func (r *runner) createContainerManager() error {
-	mopts := &container.Options{
-		ContainerDirectory: filepath.Join(kurmaPath, string(kurmaPathPods)),
+func (r *runner) createPodManager() error {
+	mopts := &podmanager.Options{
+		PodDirectory:       filepath.Join(kurmaPath, string(kurmaPathPods)),
 		VolumeDirectory:    filepath.Join(kurmaPath, string(kurmaPathVolumes)),
 		RequiredNamespaces: r.config.RequiredNamespaces,
 		ParentCgroupName:   r.config.ParentCgroupName,
+		Log:                r.log.Clone(),
 	}
-	m, err := container.NewManager(r.imageManager, nil, mopts)
+	m, err := podmanager.NewManager(r.imageManager, nil, mopts)
 	if err != nil {
-		return fmt.Errorf("failed to create the container manager: %v", err)
+		return fmt.Errorf("failed to create the pod manager: %v", err)
 	}
-	m.SetLog(r.log.Clone())
-	r.containerManager = m
-	r.log.Trace("Container Manager has been initialized.")
+	r.podManager = m
+	r.log.Trace("Pod Manager has been initialized.")
 
 	os.Chdir(kurmaPath)
 	return nil
 }
 
 // createNetworkManager creates the network manager which launches the network
-// provisioner containers.
+// provisioner pods.
 func (r *runner) createNetworkManager() error {
-	networkManager, err := network.New(r.containerManager)
+	networkManager, err := networkmanager.New(r.podManager)
 	if err != nil {
 		r.log.Errorf("Failed to create network manager: %v", err)
 		return nil
 	}
 	networkManager.SetLog(r.log.Clone())
 	r.networkManager = networkManager
-	r.containerManager.SetNetworkManager(networkManager)
+	r.podManager.SetNetworkManager(networkManager)
 
-	for _, containerNet := range r.config.ContainerNetworks {
-		func() {
-			hash, manifest, err := aciremote.LoadImage(containerNet.ACI, true, r.imageManager)
-			if err != nil {
-				r.log.Warnf("Failed to load image for network %q: %v", containerNet.Name, err)
-				return
-			}
+	networkDrivers := make([]*backend.NetworkDriver, 0, len(r.config.PodNetworks))
 
-			if err := networkManager.CreateDriver(manifest, hash, containerNet); err != nil {
-				r.log.Errorf("Failed to configure network %q: %v", containerNet.Name, err)
-				return
-			}
-			r.log.Infof("Launched network driver %q", containerNet.Name)
-		}()
+	for _, podNet := range r.config.PodNetworks {
+		hash, _, err := aciremote.LoadImage(podNet.ACI, true, r.imageManager)
+		if err != nil {
+			r.log.Warnf("Failed to load image for network %q: %v", podNet.Name, err)
+			continue
+		}
+
+		imageID, err := types.NewHash(hash)
+		if err != nil {
+			r.log.Warnf("Failed to generate image hash for %q: %v", podNet.Name, err)
+			continue
+		}
+
+		driver := &backend.NetworkDriver{
+			Image: schema.RuntimeImage{
+				ID: *imageID,
+			},
+			Configuration: podNet,
+		}
+		networkDrivers = append(networkDrivers, driver)
 	}
 
+	if err := r.networkManager.Setup(networkDrivers); err != nil {
+		r.log.Errorf("Failed to set up the networking pod: %v", err)
+	}
 	return nil
 }
 
@@ -651,14 +660,14 @@ func (r *runner) markBootSuccessful() error {
 		return nil
 	}
 
-	device := util.ResolveDevice(*r.config.SuccessfulBoot)
+	device := devices.ResolveDevice(*r.config.SuccessfulBoot)
 	if device == "" {
 		r.log.Warnf("Failed to resolve boot device of %q", *r.config.SuccessfulBoot)
 		return nil
 	}
 
-	rawdev := util.GetRawDevice(device)
-	partnum := util.GetPartitionNumber(device)
+	rawdev := devices.GetRawDevice(device)
+	partnum := devices.GetPartitionNumber(device)
 	if rawdev == "" || partnum == "" {
 		r.log.Warnf("Failed to resolve device/partition: %q / %q", rawdev, partnum)
 		return nil
@@ -682,15 +691,15 @@ func (r *runner) startServer() error {
 	perms := os.FileMode(0770)
 	group := 200
 
-	opts := &server.Options{
+	opts := &daemon.Options{
 		ImageManager:      r.imageManager,
-		ContainerManager:  r.containerManager,
+		PodManager:        r.podManager,
 		SocketFile:        filepath.Join(kurmaPath, "socket"),
 		SocketPermissions: &perms,
 		SocketGroup:       &group,
 	}
 
-	s := server.New(opts)
+	s := daemon.New(opts)
 	if err := s.Start(); err != nil {
 		r.log.Errorf("Error with Kurma server: %v", err)
 		return err
@@ -698,22 +707,23 @@ func (r *runner) startServer() error {
 	return nil
 }
 
-// startInitContainers launches the initial containers that are specified in the
+// startInitPods launches the initial pods that are specified in the
 // configuration.
-func (r *runner) startInitContainers() error {
-	for _, img := range r.config.InitContainers {
+func (r *runner) startInitPods() error {
+	for _, img := range r.config.InitPods {
 		func() {
-			hash, manifest, err := aciremote.LoadImage(img, true, r.imageManager)
+			_, manifest, err := aciremote.LoadImage(img, true, r.imageManager)
 			if err != nil {
 				r.log.Warnf("Failed to load image %q: %v", img, err)
 				return
 			}
 
-			if _, err := r.containerManager.Create("", manifest, hash); err != nil {
-				r.log.Warnf("Failed to launch container %s: %v", manifest.Name.String(), err)
+			// FIXME
+			if _, err := r.podManager.Create("", schema.BlankPodManifest(), nil); err != nil {
+				r.log.Warnf("Failed to launch pod %s: %v", manifest.Name.String(), err)
 				return
 			}
-			r.log.Infof("Launched container %s", manifest.Name.String())
+			r.log.Infof("Launched pod %s", manifest.Name.String())
 		}()
 	}
 	return nil
@@ -726,21 +736,22 @@ func (r *runner) startUdev() error {
 		return nil
 	}
 
-	// FIXME make this configurable on the container somehow
-	r.containerManager.SwapDirectory(systemContainersPath, func() {
-		hash, manifest, err := aciremote.LoadImage(r.config.Services.Udev.ACI, true, r.imageManager)
+	// FIXME make this configurable on the pod somehow
+	r.podManager.SwapDirectory(systemPodsPath, func() {
+		_, _, err := aciremote.LoadImage(r.config.Services.Udev.ACI, true, r.imageManager)
 		if err != nil {
 			r.log.Warnf("Failed to load udev image: %v", err)
 			return
 		}
 
-		container, err := r.containerManager.Create("udev", manifest, hash)
+		// FIXME
+		pod, err := r.podManager.Create("udev", schema.BlankPodManifest(), nil)
 		if err != nil {
 			r.log.Warnf("Failed to launch udev: %v", err)
 			return
 		} else {
 			r.log.Debug("Started udev")
-			container.Wait()
+			pod.Wait()
 		}
 	})
 	return nil
@@ -755,7 +766,7 @@ func (r *runner) startNTP() error {
 
 	r.log.Info("Updating system clock via NTP...")
 
-	hash, manifest, err := aciremote.LoadImage(r.config.Services.NTP.ACI, true, r.imageManager)
+	_, manifest, err := aciremote.LoadImage(r.config.Services.NTP.ACI, true, r.imageManager)
 	if err != nil {
 		r.log.Warnf("Failed to load NTP image: %v", err)
 		return nil
@@ -765,7 +776,8 @@ func (r *runner) startNTP() error {
 	manifest.App.Environment.Set(
 		"NTP_SERVERS", strings.Join(r.config.Services.NTP.Servers, " "))
 
-	if _, err := r.containerManager.Create("ntp", manifest, hash); err != nil {
+	// FIXME
+	if _, err := r.podManager.Create("ntp", schema.BlankPodManifest(), nil); err != nil {
 		r.log.Warnf("Failed to start NTP: %v", err)
 		return nil
 	}
@@ -780,7 +792,7 @@ func (r *runner) startConsole() error {
 		return nil
 	}
 
-	hash, manifest, err := aciremote.LoadImage(r.config.Services.Console.ACI, true, r.imageManager)
+	_, manifest, err := aciremote.LoadImage(r.config.Services.Console.ACI, true, r.imageManager)
 	if err != nil {
 		r.log.Warnf("Failed to load console image: %v", err)
 		return nil
@@ -794,7 +806,8 @@ func (r *runner) startConsole() error {
 	manifest.App.Environment.Set(
 		"CONSOLE_KEYS", strings.Join(r.config.Services.Console.SSHKeys, "\n"))
 
-	if _, err := r.containerManager.Create("console", manifest, hash); err != nil {
+	// FIXME
+	if _, err := r.podManager.Create("console", schema.BlankPodManifest(), nil); err != nil {
 		return fmt.Errorf("Failed to start console: %v", err)
 	}
 	r.log.Debug("Started console")
