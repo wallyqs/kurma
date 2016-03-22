@@ -1,0 +1,20 @@
+---
+name: apcera.com/kurma/udev
+app:
+  exec:
+  - /start.sh
+  user: "0"
+  group: "0"
+  environment:
+  - name: PATH
+    value: /bin
+  isolators:
+  - name: host/privileged
+    value: true
+  - name: os/linux/privileged
+    value: true
+  - name: os/linux/namespaces
+    value:
+      ipc: host
+      net: host
+      uts: host

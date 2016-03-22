@@ -76,6 +76,14 @@ bin/cni-netplugin.aci: bin/busybox.aci bin/cni-netplugin-setup
 .PHONY: cni-netplugin-aci
 cni-netplugin-aci: bin/cni-netplugin.aci
 
+## ntp
+bin/ntp.aci:
+	$(DOCKER) -e VERSION=${VERSION} apcera/kurma-stage4 ./build/aci/ntp/build.sh $@
+
+## udev
+bin/udev.aci:
+	$(DOCKER) -e VERSION=${VERSION} apcera/kurma-stage4 ./build/aci/udev/build.sh $@
+
 
 #
 # Testing

@@ -35,5 +35,10 @@ LD_TRACE_LOADED_OBJECTS=1 $dir/kexec | grep so | grep -v linux-vdso.so.1 \
     | sed -e 's/ (0.*)//' \
     | xargs -I % cp % $dir/lib/
 
+# generate ld.so.cache
+mkdir $dir/etc
+echo "/lib" > $dir/etc/ld.so.conf
+(cd $dir && ldconfig -r . -C etc/ld.so.cache -f etc/ld.so.conf)
+
 # generate the aci
 go run ../build.go -manifest ./manifest.yaml -root $dir -output $BASE_PATH/$1

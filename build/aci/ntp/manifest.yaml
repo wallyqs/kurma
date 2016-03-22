@@ -1,0 +1,15 @@
+---
+name: apcera.com/kurma/ntp
+app:
+  exec:
+  - /start.sh
+  user: "0"
+  group: "0"
+  isolators:
+  - name: os/linux/privileged
+    value: true
+  - name: os/linux/namespaces
+    value:
+      ipc: host
+      net: host
+      uts: host
