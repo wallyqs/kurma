@@ -15,6 +15,10 @@ chmod 755 $dir
 cp ../bin/kurma-init $dir/kurma
 ln -s kurma $dir/init
 
+# copy in the acis
+mkdir $dir/acis
+cp ../bin/*.aci $dir/acis/
+
 # copy in the kernel modules
 rsync -a /lib/modules $dir/lib
 
@@ -53,7 +57,6 @@ cp /usr/bin/cgpt $dir/bin/cgpt
 # setup etc
 mkdir -p $dir/etc/ssl/certs
 cp kurma-init/kurma.json $dir/etc/kurma.json
-chown 0:0 $dir/etc/kurma.json
 touch $dir/etc/mtab
 touch $dir/etc/resolv.conf
 echo "LSB_VERSION=1.4" > $dir/etc/lsb-release

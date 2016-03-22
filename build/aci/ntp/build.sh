@@ -22,7 +22,7 @@ ln -s busybox $dir/ntpd
 # setup etc and lib folders
 mkdir $dir/etc $dir/lib
 ln -s lib $dir/lib64
-echo "127.0.0.1 localhost localhost.localdomain" > $ntp/etc/hosts
+echo "127.0.0.1 localhost localhost.localdomain" > $dir/etc/hosts
 
 # copy libnss so it can do dns
 cp /etc/nsswitch.conf $dir/etc/

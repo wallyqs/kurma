@@ -34,7 +34,7 @@ kurma-init:
 #
 # kurmaOS init image
 #
-bin/kurma-init.tar.gz: kurma-init
+bin/kurma-init.tar.gz: kurma-init bin/stager-container.aci bin/console.aci bin/ntp.aci bin/udev.aci bin/busybox.aci bin/cni-netplugin.aci
 	$(DOCKER) ./build/kurma-init-tarball.sh
 
 #
