@@ -33,7 +33,7 @@ endif
 #
 .PHONY: kurma-cli kurma-server kurma-init
 kurma-cli:
-	$(DOCKER) go build -o ${BASEPATH}/bin/$@ cmd/kurma-cli.go
+	go build -o ${BASEPATH}/bin/$@ cmd/kurma-cli.go
 kurma-server:
 	$(DOCKER) go build -o ${BASEPATH}/bin/$@ cmd/kurma-server.go
 kurma-init:
