@@ -16,23 +16,38 @@ group := 50
 endif
 DOCKER := docker run --rm -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -e GOPATH=${GOPATH} --user=${user}\:${group} apcera/kurma-kernel
 
+# Setup command for locally running Kurma on Linux, or running it within Docker
+# on OS X.
+RUN_CONFIG := build/local-kurmad.yml
+RUN_CMD := sudo env RUN_CONFIG=${RUN_CONFIG}
+ifeq ($(UNAMES),Darwin)
+RUN_CMD := docker run --rm -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -v /tmp -e RUN_CONFIG=${RUN_CONFIG} --user=0:0 --privileged -i -t apcera/kurma-kernel
+endif
+
+# If STATIC=1 is set in the command line, then configure static compilation for
+# libraries other than libc.
 ifeq ($(STATIC),1)
 export CGO_LDFLAGS := -Wl,-Bstatic -lmount -lblkid -luuid -Wl,-Bdynamic
 endif
 
+# If the version flag is set, then ensure it will be passed down to Docker.
 ifdef $(VERSION)
 DOCKER += -e VERSION=${VERSION}
 endif
 
+# If we're already running within in Docker (such as on CI), then blank out the
+# Docker command line.
 ifeq ($(IN_DOCKER),1)
 DOCKER :=
 endif
+
+.DEFAULT_GOAL := local
 
 #
 # Resources
 #
 .PHONY: download
-download:
+download: ## Download common pre-built assets from Kurma's CI
 	@echo 'Downloading buildroot.tar.gz'
 	@curl -L -o bin/buildroot.tar.gz http://ci.kurma.io/repository/download/Artifacts_ACIs_Buildroot/master.tcbuildtag/buildroot.tar.gz?guest=1
 	@echo 'Downloading busybox.aci'
@@ -45,12 +60,23 @@ download:
 
 
 #
+# Common Groupings
+#
+.PHONY: local
+local: kurma-cli kurma-server stager/container kurma-api ## Build the pieces typically needed for local development and testing.
+.PHONY: run
+run: ## Locally run kurmad
+	@echo 'Running kurmad'
+	@$(RUN_CMD) ./build/run.sh
+
+
+#
 # Kurma Binaries
 #
 .PHONY: kurma-cli kurma-server kurma-init
-kurma-cli:
+kurma-cli:    ## Locally build the kurma-cli binary
 	go build -o ${BASEPATH}/bin/$@ cmd/kurma-cli.go
-kurma-server:
+kurma-server: ## Build the kurma-server binary in Docker
 	$(DOCKER) go build -o ${BASEPATH}/bin/$@ cmd/kurma-server.go
 kurma-init:
 	$(DOCKER) go build -o ${BASEPATH}/bin/$@ cmd/kurma-init.go
@@ -64,14 +90,15 @@ bin/kurma-init.tar.gz: kurma-init bin/stager-container.aci bin/console.aci bin/n
 #
 # Stager - Container
 #
-bin/stager-container-main: *
+.PHONY: bin/stager-container-main
+bin/stager-container-main:
 	$(DOCKER) go build -o ${BASEPATH}/$@ stager/container/main.go
 bin/stager-container-init: stager/container/init/init.c
 	$(DOCKER) gcc -static -o ${BASEPATH}/$@ stager/container/init/init.c
 bin/stager-container.aci: bin/stager-container-main bin/stager-container-init
 	$(DOCKER) ./build/aci/kurma-stager-container/build.sh $@
 .PHONY: stager/container
-stager/container: bin/stager-container.aci
+stager/container: bin/stager-container.aci ## Build the default stager ACI in Docker
 
 
 #
@@ -82,7 +109,7 @@ stager/container: bin/stager-container.aci
 .PHONY: kurma-api
 kurma-api:
 	$(DOCKER) go build -o ${BASEPATH}/bin/$@ cmd/kurma-api.go
-	$(DOCKER) ./build/aci/kurma-api/build.sh ./bin/$@
+	$(DOCKER) ./build/aci/kurma-api/build.sh ./bin/$@.aci
 
 ## kurma-upgrader
 bin/kurma-upgrader: util/installer/installer.go
@@ -125,8 +152,14 @@ bin/console.aci: kurma-cli
 # Testing
 #
 .PHONY: test
-test:
+test: ## Locally run the unit tests
 	go test -i $(PKG)
 	go test -v $(PKG)
-.PHONY: local
-local: kurma-cli kurma-server stager/container
+
+
+#
+# Help
+#
+.PHONY: help
+help:
+	@grep -E '^[a-zA-Z_-/]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
