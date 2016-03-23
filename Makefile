@@ -73,7 +73,7 @@ kurma-api:
 ## kurma-upgrader
 bin/kurma-upgrader: util/installer/installer.go
 	$(DOCKER) go build -o ${BASEPATH}/$@ util/installer/installer.go
-bin/kurma-upgrader.aci: bin/kurma-upgrader
+bin/kurma-upgrader.aci: bin/kurma-upgrader bin/kurma-init.tar.gz
 	$(DOCKER) ./build/aci/kurma-upgrader/build.sh $@
 .PHONY: kurma-upgrader
 kurma-upgrader: bin/kurma-upgrader.aci

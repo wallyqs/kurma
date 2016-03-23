@@ -19,7 +19,7 @@ cp $(which cgpt) $dir/
 cp $(which kexec) $dir/
 
 # extract the kurma-init build
-tar -xf ../../../bin/kurma-init.tar.gz
+tar -xf ../../../bin/kurma-init.tar.gz -C $dir
 
 # copy needed dynamic libraries
 LD_TRACE_LOADED_OBJECTS=1 $dir/kurma-upgrader | grep so | grep -v linux-vdso.so.1 \
