@@ -29,6 +29,22 @@ DOCKER :=
 endif
 
 #
+# Resources
+#
+.PHONY: download
+download:
+	@echo 'Downloading buildroot.tar.gz'
+	@curl -L -o bin/buildroot.tar.gz http://ci.kurma.io/repository/download/Artifacts_ACIs_Buildroot/master.tcbuildtag/buildroot.tar.gz?guest=1
+	@echo 'Downloading busybox.aci'
+	@curl -L -o bin/busybox.aci http://ci.kurma.io/repository/download/Artifacts_ACIs_Busybox/master.tcbuildtag/busybox.aci?guest=1
+	@echo 'Downloading cni-netplugin.aci'
+	@curl -L -o bin/cni-netplugin.aci http://ci.kurma.io/repository/download/Artifacts_ACIs_CniNetplugin/master.tcbuildtag/cni-netplugin.aci?guest=1
+	@echo 'Downloading kurmaOS services (ntp.aci and udev.aci)'
+	@curl -L -o bin/ntp.aci http://ci.kurma.io/repository/download/Artifacts_ACIs_KurmaOSServices/master.tcbuildtag/ntp.aci?guest=1
+	@curl -L -o bin/udev.aci http://ci.kurma.io/repository/download/Artifacts_ACIs_KurmaOSServices/master.tcbuildtag/udev.aci?guest=1
+
+
+#
 # Kurma Binaries
 #
 .PHONY: kurma-cli kurma-server kurma-init
