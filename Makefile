@@ -4,9 +4,17 @@ export BASEPATH
 # Set to 1 to use static linking.
 STATIC :=
 PKG    := ./...
+
+# Determine the user ID and group ID to be used within docker. If using Docker
+# Toolbox such as on Darwin, it will map to 1000:50.
 user   := $(shell id -u)
 group  := $(shell id -g)
-DOCKER := docker run -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -e GOPATH=${GOPATH} --user=${user}\:${group} apcera/kurma-kernel
+UNAMES := $(shell uname -s)
+ifeq ($(UNAMES),Darwin)
+user  := 1000
+group := 50
+endif
+DOCKER := docker run --rm -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -e GOPATH=${GOPATH} --user=${user}\:${group} apcera/kurma-kernel
 
 ifeq ($(STATIC),1)
 export CGO_LDFLAGS := -Wl,-Bstatic -lmount -lblkid -luuid -Wl,-Bdynamic
