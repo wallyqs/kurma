@@ -7,12 +7,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 
-	"github.com/apcera/kurma/stager/container"
-	"github.com/apcera/logray"
-	"github.com/opencontainers/runc/libcontainer"
+	"github.com/apcera/kurma/stager/container/core"
+	"github.com/apcera/kurma/stager/container/run"
 
+	"github.com/opencontainers/runc/libcontainer"
 	_ "github.com/opencontainers/runc/libcontainer/nsenter"
 )
 
@@ -29,11 +30,21 @@ func init() {
 }
 
 func main() {
-	logray.AddDefaultOutput("stdout://", logray.ALL)
+	execName := filepath.Base(os.Args[0])
 
-	if err := container.Run(); err != nil {
-		fmt.Printf("ERR: %v\n", err)
+	var execFunc func() error
+	switch execName {
+	case "stager":
+		execFunc = core.Run
+	case "run":
+		execFunc = run.Run
+	default:
+		fmt.Fprintf(os.Stderr, "Unrecognized command %q", execName)
 		os.Exit(1)
 	}
-	runtime.Goexit()
+
+	if err := execFunc(); err != nil {
+		fmt.Fprintf(os.Stderr, "ERR: %v\n", err)
+		os.Exit(1)
+	}
 }

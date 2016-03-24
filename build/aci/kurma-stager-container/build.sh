@@ -22,9 +22,9 @@ cp ../../../bin/stager-container-main $dir/stager
 mkdir $dir/init
 cp ../../../bin/stager-container-init $dir/init/init
 
-# other stager entry points
+# symlink other stager entry points
 mkdir -p $dir/opt/stager
-cp ../../../bin/stager-container-run $dir/opt/stager/run
+ln -s /stager $dir/opt/stager/run
 
 # copy some other binaries that may be needed
 mkdir $dir/bin

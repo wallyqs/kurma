@@ -65,12 +65,10 @@ bin/kurma-init.tar.gz: kurma-init bin/stager-container.aci bin/console.aci bin/n
 # Stager - Container
 #
 bin/stager-container-main: *
-	$(DOCKER) go build -o ${BASEPATH}/$@ stager/container.go
+	$(DOCKER) go build -o ${BASEPATH}/$@ stager/container/main.go
 bin/stager-container-init: stager/container/init/init.c
 	$(DOCKER) gcc -static -o ${BASEPATH}/$@ stager/container/init/init.c
-bin/stager-container-run: *
-	$(DOCKER) go build -o ${BASEPATH}/$@ stager/container/cmd/run/main.go
-bin/stager-container.aci: bin/stager-container-main bin/stager-container-init bin/stager-container-run
+bin/stager-container.aci: bin/stager-container-main bin/stager-container-init
 	$(DOCKER) ./build/aci/kurma-stager-container/build.sh $@
 .PHONY: stager/container
 stager/container: bin/stager-container.aci

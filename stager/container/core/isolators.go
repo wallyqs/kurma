@@ -1,6 +1,6 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-package container
+package core
 
 import (
 	"fmt"
