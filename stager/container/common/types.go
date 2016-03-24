@@ -1,27 +1,27 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-package container
+package common
 
-type stagerRuntimeState string
+type StagerRuntimeState string
 
 const (
-	stagerStateSetup    = stagerRuntimeState("setup")
-	stagerStateRunning  = stagerRuntimeState("running")
-	stagerStateTeardown = stagerRuntimeState("teardown")
+	StagerStateSetup    = StagerRuntimeState("setup")
+	StagerStateRunning  = StagerRuntimeState("running")
+	StagerStateTeardown = StagerRuntimeState("teardown")
 )
 
-type stagerConfig struct {
+type StagerConfig struct {
 	RequiredNamespaces []string `json:"requiredNamespaces"`
 	DefaultNamespaces  []string `json:"defaultNamespaces"`
 	GraphStorage       string   `json:"graphStorage"`
 }
 
-type stagerState struct {
-	Apps  map[string]*stagerAppState `json:"apps"`
-	State stagerRuntimeState         `json:"state"`
+type StagerState struct {
+	Apps  map[string]*StagerAppState `json:"apps"`
+	State StagerRuntimeState         `json:"state"`
 }
 
-type stagerAppState struct {
+type StagerAppState struct {
 	Pid        int    `json:"pid,omitempty"`
 	Exited     bool   `json:"exited"`
 	ExitCode   int    `json:"exitCode,omitempty"`

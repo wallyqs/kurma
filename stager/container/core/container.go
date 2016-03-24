@@ -1,6 +1,6 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-package container
+package core
 
 import (
 	"encoding/json"
@@ -15,6 +15,7 @@ import (
 	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/kurma/pkg/graphstorage"
 	"github.com/apcera/kurma/pkg/graphstorage/overlay"
+	"github.com/apcera/kurma/stager/container/common"
 	"github.com/apcera/logray"
 	"github.com/opencontainers/runc/libcontainer"
 )
@@ -24,10 +25,10 @@ type containerSetup struct {
 
 	// Passed in configuration related fields.
 	manifest     backend.StagerManifest
-	stagerConfig *stagerConfig
+	stagerConfig *common.StagerConfig
 
 	// state objects
-	state      *stagerState
+	state      *common.StagerState
 	stateMutex sync.Mutex
 	isStopping bool
 
@@ -45,7 +46,7 @@ type containerSetup struct {
 }
 
 var (
-	defaultStagerConfig = &stagerConfig{
+	defaultStagerConfig = &common.StagerConfig{
 		RequiredNamespaces: []string{"ipc", "pid", "uts"},
 		DefaultNamespaces:  []string{"ipc", "net", "pid", "uts"},
 		GraphStorage:       "overlay",
@@ -73,17 +74,6 @@ var (
 		(*containerSetup).stopContainers,
 	}
 )
-
-func Run() error {
-	cs := &containerSetup{
-		log:           logray.New(),
-		stagerConfig:  defaultStagerConfig,
-		appContainers: make(map[string]libcontainer.Container),
-		appProcesses:  make(map[string]*libcontainer.Process),
-		appWaitch:     make(map[string]chan struct{}),
-	}
-	return cs.run()
-}
 
 // run executes the setup functions to start up the stager and the applications
 // in its pod.
@@ -190,12 +180,12 @@ func (cs *containerSetup) populateState() error {
 	cs.stateMutex.Lock()
 	defer cs.stateMutex.Unlock()
 
-	cs.state = &stagerState{
-		Apps:  make(map[string]*stagerAppState),
-		State: stagerStateSetup,
+	cs.state = &common.StagerState{
+		Apps:  make(map[string]*common.StagerAppState),
+		State: common.StagerStateSetup,
 	}
 	for _, app := range cs.manifest.Pod.Apps {
-		cs.state.Apps[app.Name.String()] = &stagerAppState{}
+		cs.state.Apps[app.Name.String()] = &common.StagerAppState{}
 	}
 	return nil
 }
@@ -400,7 +390,7 @@ func (cs *containerSetup) createContainers() error {
 func (cs *containerSetup) markRunning() error {
 	cs.log.Info("Marking stager as running.")
 	cs.stateMutex.Lock()
-	cs.state.State = stagerStateRunning
+	cs.state.State = common.StagerStateRunning
 	cs.stateMutex.Unlock()
 	return nil
 }
@@ -418,7 +408,7 @@ func (cs *containerSetup) markShuttingDown() error {
 	cs.isStopping = true
 	cs.log.Info("Marking stager as shutting down.")
 	cs.stateMutex.Lock()
-	cs.state.State = stagerStateTeardown
+	cs.state.State = common.StagerStateTeardown
 	cs.stateMutex.Unlock()
 	return nil
 }

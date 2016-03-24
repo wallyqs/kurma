@@ -1,6 +1,6 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 
-package container
+package core
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/apcera/kurma/stager/container/common"
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
 	"github.com/opencontainers/runc/libcontainer"
@@ -192,7 +193,7 @@ func (cs *containerSetup) getPodApp(runtimeApp schema.RuntimeApp) *types.App {
 func (cs *containerSetup) isShuttingDown() bool {
 	cs.stateMutex.Lock()
 	defer cs.stateMutex.Unlock()
-	return cs.state.State == stagerStateTeardown
+	return cs.state.State == common.StagerStateTeardown
 }
 
 // getNamespaceIsolator checks the pod manifest to see is a linux namespace
