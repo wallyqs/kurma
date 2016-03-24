@@ -123,6 +123,10 @@ type PodManager interface {
 	// operation. This is a temporary hack util a Pod object can specify its own
 	// path.
 	SwapDirectory(podDirectory string, f func())
+
+	// Shutdown requests that the pod manager shut down running pods to prepare to
+	// exit.
+	Shutdown()
 }
 
 // PodOptions is a set of locally available options to extend instrumentation

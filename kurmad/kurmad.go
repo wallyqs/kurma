@@ -20,6 +20,7 @@ var (
 	// The setup functions that should be run in order to handle setting up
 	// kurmad.
 	setupFunctions = []func(*runner) error{
+		(*runner).setupSignalHandling,
 		(*runner).loadConfigurationFile,
 		(*runner).configureLogging,
 		(*runner).createDirectories,
