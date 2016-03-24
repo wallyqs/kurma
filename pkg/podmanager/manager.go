@@ -209,6 +209,37 @@ func (manager *Manager) Create(name string, manifest *schema.PodManifest, option
 	return pod, nil
 }
 
+// Shutdown requests that the pod manager shut down running pods to prepare to
+// exit.
+func (manager *Manager) Shutdown() {
+	manager.podsLock.Lock()
+	var networkPod backend.Pod
+	networkPodUuid := manager.podNames["kurma-networking"]
+	if networkPodUuid != "" {
+		networkPod = manager.pods[networkPodUuid]
+	}
+	pods := manager.pods
+	manager.podsLock.Unlock()
+
+	wg := sync.WaitGroup{}
+	for _, pod := range pods {
+		if pod.UUID() == networkPodUuid {
+			continue
+		}
+		wg.Add(1)
+		go func(pod backend.Pod) {
+			defer wg.Done()
+			pod.Stop()
+		}(pod)
+	}
+
+	wg.Wait()
+
+	if networkPod != nil {
+		networkPod.Stop()
+	}
+}
+
 // removes a child pod from the Pod Manager.
 func (manager *Manager) remove(pod *Pod) {
 	manager.podsLock.Lock()

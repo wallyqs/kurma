@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/apcera/kurma/pkg/aciremote"
 	"github.com/apcera/kurma/pkg/backend"
@@ -20,6 +22,31 @@ import (
 	"github.com/appc/spec/schema/types"
 	"github.com/ghodss/yaml"
 )
+
+// setupSignalHandling sets up the callbacks for signals to cleanly shutdown.
+func (r *runner) setupSignalHandling() error {
+	signalc := make(chan os.Signal, 1)
+	signal.Notify(signalc, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	// Watch the channel and handle any signals that come in.
+	go func() {
+		for sig := range signalc {
+			switch sig {
+			case syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT:
+				r.log.Infof("Received %s. Shutting down.", sig.String())
+				if r.podManager != nil {
+					r.podManager.Shutdown()
+				}
+				r.log.Flush()
+				fmt.Fprintln(os.Stderr, "Shutdown complete, exiting")
+				os.Exit(0)
+			default:
+				r.log.Warnf("Received %s. Ignoring.", sig.String())
+			}
+		}
+	}()
+	return nil
+}
 
 // loadConfigurationFile is used to parse the provided configuration file.
 func (r *runner) loadConfigurationFile() error {

@@ -59,7 +59,6 @@ podNetworks:
     @pid = fork do
       logfile = File.open(self.kurma_logfile, "a")
       Dir.chdir(@tmpdir) do
-        %w( pods images volumes ).each { |d| Dir.mkdir(d) }
         $stdin.reopen("/dev/null")
         $stdout.reopen(logfile)
         $stderr.reopen(logfile)
@@ -74,7 +73,7 @@ podNetworks:
 
   def stop
     if File.exists?("/proc/#{@pid}")
-      %x{sudo kill -QUIT $(sudo cat /proc/#{@pid}/task/#{@pid}/children)}
+      %x{sudo kill -TERM $(sudo cat /proc/#{@pid}/task/#{@pid}/children)}
       begin
         wait_for_exit
       rescue Kurma::Error
