@@ -24,7 +24,7 @@ for augmenting a developer workflow, such as
 [Docker Toolbox](https://www.docker.com/products/docker-toolbox). We leverage
 that rather than reinventing.
 
-To develop and build against Kurma, all will need the following:
+To develop and build against Kurma, all you will need is the following:
 
 * Docker (if not on Linux, we recommend using [Docker Toolbox](https://www.docker.com/products/docker-toolbox))
 * Go 1.6
@@ -41,7 +41,7 @@ For a list of some of the most common tasks, you can run `make help` to see a
 list and description of some of the tasks.
 
 For local development, you should check out the `kurma` repository within your
-`$GOPATH` so that it is at `$GOPATH/src/github.com/lkurma`. You'll typically
+`$GOPATH` so that it is at `$GOPATH/src/github.com/kurma`. You'll typically
 need to run `make download` to fetch some of the pre-compiled assets (busybox
 image, CNI networking image), then run `make local` to compile local binaries
 and `make run` to run the daemon mode. If on OS X, this will start the daemon in
