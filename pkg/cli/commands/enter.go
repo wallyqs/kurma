@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/apcera/kurma/pkg/cli"
-	"github.com/appc/spec/schema/types"
+	"github.com/apcera/kurma/schema"
 	"github.com/creack/termios/raw"
 	"github.com/spf13/cobra"
 )
@@ -39,11 +39,12 @@ func cmdEnter(cmd *cobra.Command, args []string) {
 		defer raw.TcSetAttr(os.Stdin.Fd(), termios)
 	}
 
-	app := &types.App{
+	app := &schema.RunApp{
 		WorkingDirectory: "/",
 		User:             "0",
 		Group:            "0",
 		Exec:             args[2:],
+		Tty:              true,
 	}
 
 	// Initialize the reader/writer

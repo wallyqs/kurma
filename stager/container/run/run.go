@@ -5,36 +5,37 @@ package run
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
-	"github.com/appc/spec/schema/types"
+	"github.com/apcera/kurma/schema"
 	"github.com/opencontainers/runc/libcontainer"
 )
 
 func Run() error {
-	var app *types.App
-
+	// Read in the app configuration
+	var app *schema.RunApp
 	f := os.NewFile(3, "app.json")
 	if err := json.NewDecoder(f).Decode(&app); err != nil {
 		return err
 	}
 	f.Close()
 
+	// Load the container with libcontainer
 	factory, err := libcontainer.New("/containers")
 	if err != nil {
 		return err
 	}
-
 	container, err := factory.Load(os.Args[1])
 	if err != nil {
 		return err
 	}
 
+	// Setup the process
 	workingDirectory := app.WorkingDirectory
 	if workingDirectory == "" {
 		workingDirectory = "/"
 	}
-
 	process := &libcontainer.Process{
 		Cwd:    workingDirectory,
 		User:   app.User,
@@ -46,6 +47,18 @@ func Run() error {
 	for _, env := range app.Environment {
 		process.Env = append(process.Env, fmt.Sprintf("%s=%s", env.Name, env.Value))
 	}
+
+	// Create a tty for the process if the caller wants it
+	if app.Tty {
+		console, err := process.NewConsole(os.Getuid())
+		if err != nil {
+			return err
+		}
+		go io.Copy(os.Stdout, console)
+		go io.Copy(console, os.Stdin)
+	}
+
+	// Run it!
 	if err := container.Start(process); err != nil {
 		return err
 	}

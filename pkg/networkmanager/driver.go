@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/apcera/kurma/pkg/backend"
-	"github.com/appc/spec/schema/types"
+	"github.com/apcera/kurma/schema"
 
 	ntypes "github.com/apcera/kurma/pkg/networkmanager/types"
 )
@@ -61,7 +61,7 @@ func (d *networkDriver) generateArgs(targetPod backend.Pod) []string {
 // arguments. It will process any success/response message and return once done
 // or timed out.
 func (d *networkDriver) call(exec string, args []string, val interface{}) error {
-	app := &types.App{
+	app := &schema.RunApp{
 		User:  "0",
 		Group: "0",
 		Exec:  append([]string{exec}, args...),

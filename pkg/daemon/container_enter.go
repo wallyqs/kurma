@@ -3,13 +3,11 @@
 package daemon
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/apcera/kurma/pkg/apiclient"
 	"github.com/apcera/util/wsconn"
 	"github.com/gorilla/websocket"
-	"github.com/kr/pty"
 )
 
 var upgrader = websocket.Upgrader{
@@ -44,23 +42,8 @@ func (s *Server) containerEnterRequest(w http.ResponseWriter, req *http.Request)
 	wsc := wsconn.NewWebsocketConnection(ws)
 	defer wsc.Close()
 
-	// create a pty, which we'll use for the process entering the container and
-	// copy the data back up the transport.
-	master, slave, err := pty.Open()
-	if err != nil {
-		s.log.Errorf("Failed to allocate pty: %v", err)
-		http.Error(w, "Failed to allocate pty", 500)
-		return
-	}
-	defer func() {
-		slave.Close()
-		master.Close()
-	}()
-	go io.Copy(wsc, master)
-	go io.Copy(master, wsc)
-
 	// enter into the container
-	process, err := container.Enter(enterRequest.AppName, &enterRequest.App, slave, slave, slave, nil)
+	process, err := container.Enter(enterRequest.AppName, &enterRequest.App, wsc, wsc, wsc, nil)
 	if err != nil {
 		s.log.Errorf("Failed to enter container: %v", err)
 		http.Error(w, "Failed to enter container", 500)

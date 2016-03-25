@@ -260,10 +260,51 @@ applications in the pod. A single command line argument will be passed with the
 name of the application to run the command in.
 
 The settings for the command to run will be passed over a separate file
-descriptor in JSON form. It should be unmarshaled to an
-[AppC Image App](https://github.com/appc/spec/blob/master/spec/aci.md#image-manifest-schema)
-object (see just the `app` fields). This will always be passed along on file
-descriptor 3.
+descriptor in JSON form and will always be available on file descriptor 3.
+
+The JSON input is similar to the AppC Spec's "App" field of the
+ImageManifest. It could look like the following:
+
+```json
+{
+    "exec": [ "/bin/bash" ],
+    "user": "0",
+    "group": "0",
+    "supplementaryGIDs": [ 20, 21 ],
+    "workingDirectory": "/",
+    "environment": [
+        { "name": "PATH", "value": "/usr/bin:/usr/sbin:/bin:/sbin" }
+    ],
+    "tty": true
+}
+```
+
+* **exec** (list of strings, required) executable to launch and any flags
+* **user**, **group** (string, required) indicates either the username/group
+  name or the UID/GID the app is to be run as (freeform string). The user and
+  group values may be all numbers to indicate a UID/GID, however it is possible
+  on some systems (POSIX) to have usernames that are all numerical. The user and
+  group values will first be resolved using the image's own `/etc/passwd` or
+  `/etc/group`. If no valid matches are found, then if the string is all
+  numerical, it shall be converted to an integer and used as the UID/GID. If the
+  user or group field begins with a "/", the owner and group of the file found
+  at that absolute path inside the rootfs is used as the UID/GID of the
+  process. Example values for the fields include `root`, `1000`, or
+  `/usr/bin/ping`.
+* **supplementaryGIDs** (list of unsigned integers, optional) indicates
+  additional (supplementary) group IDs (GIDs) as which the app's processes
+  should run.
+* **workingDirectory** (string, optional) working directory of the launched
+  application
+* **environment** (list of objects, optional) represents the app's environment
+  variables. The listed objects must have two key-value pairs:
+  **name** and **value**. The **name** must consist solely of letters, digits,
+  and underscores '_' as outlined in
+  [IEEE Std 1003.1-2001](http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap08.html). The
+  **value** is an arbitrary string. These values are not evaluated in any way,
+  and no substitutions are made.
+* **tty** (boolean, optional, defaults to "false" if unsupplied) if set to true,
+  a tty will be allocated and given to the process as its stdin/stdout/stderr.
 
 It is expected that the JSON configuration should be read in within 10
 seconds. Failure to read all of the configuration, including the EOF, will
@@ -277,21 +318,8 @@ complete. The exit code should be propagated back to the parent.
 
 Example:
 
-```
+```shell
 $ /opt/stager/run ubuntu
-```
-
-App JSON:
-
-```
-{
-    "exec": [
-        "/bin/bash"
-    ],
-    "user": "0",
-    "group": "0",
-    "workingDirectory": "/"
-}
 ```
 
 #### `attach`
