@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/util/tempfile"
@@ -44,7 +46,11 @@ func RetrieveImage(imageUri string, labels map[types.ACIdentifier]string, insecu
 	switch u.Scheme {
 	case "file":
 		// for file:// urls, just load the file and return it
-		return os.Open(u.Path)
+		filename := u.Path
+		if u.Host != "" {
+			filename = filepath.Join(u.Host, u.Path)
+		}
+		return os.Open(filename)
 
 	case "http", "https":
 		// Handle HTTP retrievals, wrapped with a tempfile that cleans up.
@@ -145,7 +151,11 @@ func LoadImage(imageUri string, insecure bool, imageManager backend.ImageManager
 		}
 	}
 
-	f, err := RetrieveImage(imageUri, nil, insecure)
+	labels := make(map[types.ACIdentifier]string)
+	labels[types.ACIdentifier("os")] = runtime.GOOS
+	labels[types.ACIdentifier("arch")] = runtime.GOARCH
+
+	f, err := RetrieveImage(imageUri, labels, insecure)
 	if err != nil {
 		return "", nil, err
 	}

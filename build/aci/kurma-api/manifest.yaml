@@ -3,12 +3,8 @@ name: apcera.com/kurma/api
 app:
   exec:
   - /kurma-api
-  user: "1000"
-  group: "1000"
+  user: "0"
+  group: "0"
   isolators:
   - name: host/api-access
     value: true
-  - name: os/linux/namespaces
-    value:
-      net: host
-      uts: host

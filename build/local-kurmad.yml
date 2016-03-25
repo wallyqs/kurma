@@ -1,0 +1,46 @@
+---
+
+##
+## Example kurmad configuration file for local development
+##
+
+# Note the paths here are intentional, as the running of the daemon is setup
+# through `run.sh`
+
+socketPath: ./kurma.sock
+socketPermissions: 0666
+parentCgroupName: kurma
+podsDirectory: ./pods
+imagesDirectory: ./images
+volumesDirectory: ./volumes
+defaultStagerImage: file://source/bin/stager-container.aci
+
+prefetchImages:
+- file://source/bin/busybox.aci
+- file://source/bin/kurma-api.aci
+
+initialPods:
+- name: api-proxy
+  apps:
+  - name: api-proxy
+    image:
+      name: apcera.com/kurma/api
+  isolators:
+  - name: os/linux/namespaces
+    value:
+      net: host
+      uts: host
+
+podNetworks:
+- name: bridge
+  aci: "file://source/bin/cni-netplugin.aci"
+  default: true
+  containerInterface: "veth+{{shortuuid}}"
+  type: bridge
+  bridge: bridge0
+  isGateway: true
+  ipMasq: true
+  ipam:
+    type: host-local
+    subnet: 10.220.0.0/16
+    routes: [ { dst: 0.0.0.0/0 } ]

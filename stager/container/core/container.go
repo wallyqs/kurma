@@ -364,7 +364,7 @@ func (cs *containerSetup) createContainers() error {
 		}
 
 		if err := container.Start(process); err != nil {
-			return fmt.Errorf("failed to launch stager process: %v", err)
+			return fmt.Errorf("failed to launch app %q process: %v", name, err)
 		}
 		cs.appMutex.Lock()
 		cs.appProcesses[name] = process

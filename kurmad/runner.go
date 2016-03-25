@@ -93,6 +93,22 @@ func (r *runner) configureLogging() error {
 // createDirectories ensures the specified storage paths for pods and volumes
 // exist.
 func (r *runner) createDirectories() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to determine current working directory: %v", err)
+	}
+
+	// Ensure directories are absolute paths
+	if !filepath.IsAbs(r.config.ImagesDirectory) {
+		r.config.ImagesDirectory = filepath.Join(wd, r.config.ImagesDirectory)
+	}
+	if !filepath.IsAbs(r.config.PodsDirectory) {
+		r.config.PodsDirectory = filepath.Join(wd, r.config.PodsDirectory)
+	}
+	if !filepath.IsAbs(r.config.VolumesDirectory) {
+		r.config.VolumesDirectory = filepath.Join(wd, r.config.VolumesDirectory)
+	}
+
 	if err := os.MkdirAll(r.config.ImagesDirectory, os.FileMode(0755)); err != nil {
 		return fmt.Errorf("failed to create images directory: %v", err)
 	}
