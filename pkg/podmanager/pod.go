@@ -5,6 +5,7 @@ package podmanager
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"syscall"
@@ -13,8 +14,9 @@ import (
 	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/logray"
 	"github.com/appc/spec/schema"
-	"github.com/appc/spec/schema/types"
 	"github.com/opencontainers/runc/libcontainer"
+
+	kschema "github.com/apcera/kurma/schema"
 )
 
 // Pod represents the operation and management of an individual container
@@ -154,7 +156,7 @@ func (pod *Pod) ShortName() string {
 // Enter is used to load a console session within the container. It re-enters
 // the container through the stage2 rather than through the initd so that it can
 // easily stream in and out.
-func (pod *Pod) Enter(appName string, app *types.App, stdin, stdout, stderr *os.File, postStart func()) (*os.Process, error) {
+func (pod *Pod) Enter(appName string, app *kschema.RunApp, stdin io.Reader, stdout, stderr io.Writer, postStart func()) (*os.Process, error) {
 	if pod.State() != backend.RUNNING {
 		return nil, fmt.Errorf("pod must be in the running state to enter it")
 	}

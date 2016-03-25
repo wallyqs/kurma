@@ -14,6 +14,7 @@ import (
 	"github.com/opencontainers/runc/libcontainer/configs"
 
 	ntypes "github.com/apcera/kurma/pkg/networkmanager/types"
+	kschema "github.com/apcera/kurma/schema"
 )
 
 // PodState is used to track the basic state that a pod is in, such
@@ -212,7 +213,7 @@ type Pod interface {
 	// Enter is used to load a console session within the pod. It re-enters the
 	// pod through the stage2 rather than through the initd so that it can easily
 	// stream in and out.
-	Enter(appName string, app *types.App, stdin, stdout, stderr *os.File, postStart func()) (*os.Process, error)
+	Enter(appName string, app *kschema.RunApp, stdin io.Reader, stdout, stderr io.Writer, postStart func()) (*os.Process, error)
 
 	// WaitForState is used to poll until the state of the pod reaches a desired
 	// state.

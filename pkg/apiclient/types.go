@@ -5,6 +5,8 @@ package apiclient
 import (
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
+
+	kschema "github.com/apcera/kurma/schema"
 )
 
 type Pod struct {
@@ -36,9 +38,9 @@ type PodResponse struct {
 }
 
 type ContainerEnterRequest struct {
-	UUID    string    `json:"uuid"`
-	AppName string    `json:"appName"`
-	App     types.App `json:"app"`
+	UUID    string         `json:"uuid"`
+	AppName string         `json:"appName"`
+	App     kschema.RunApp `json:"app"`
 }
 
 type ImageListResponse struct {

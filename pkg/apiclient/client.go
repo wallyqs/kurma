@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/apcera/kurma/schema"
 	"github.com/apcera/util/wsconn"
-	"github.com/appc/spec/schema/types"
 	"github.com/gorilla/rpc/v2/json2"
 	"github.com/gorilla/websocket"
 )
@@ -24,7 +24,7 @@ type Client interface {
 	ListPods() ([]*Pod, error)
 	GetPod(uuid string) (*Pod, error)
 	DestroyPod(uuid string) error
-	EnterContainer(uuid string, appName string, app *types.App) (net.Conn, error)
+	EnterContainer(uuid string, appName string, app *schema.RunApp) (net.Conn, error)
 
 	CreateImage(reader io.Reader) (*Image, error)
 	ListImages() ([]*Image, error)
@@ -136,7 +136,7 @@ func (c *client) DestroyPod(uuid string) error {
 	return c.execute("Pods.Destroy", uuid, nil)
 }
 
-func (c *client) EnterContainer(uuid string, appName string, app *types.App) (net.Conn, error) {
+func (c *client) EnterContainer(uuid string, appName string, app *schema.RunApp) (net.Conn, error) {
 	u, err := url.Parse(c.baseUrl)
 	if err != nil {
 		return nil, err
