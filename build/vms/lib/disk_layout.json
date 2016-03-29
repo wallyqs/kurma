@@ -1,0 +1,60 @@
+{
+  "_comment": "See http://www.chromium.org/chromium-os/building-chromium-os/disk-layout-format",
+  "metadata":{
+    "_comment": "Partitions are aligned to 2MB (4096 blocks). For the sake of VHD disks sizes should align to *both* 2MB and a CHS cylender boundry for the common 16H 63S geometry (16*63 = 1008 blocks). The least common multiple of 4096 and 1008 is 258048 blocks.",
+    "part_alignment": 4096,
+    "disk_alignment": 258048,
+    "block_size": 512,
+    "fs_block_size": 4096
+  },
+  "layouts":{
+    "base":{
+      "1":{
+        "label":"EFI-SYSTEM",
+        "type":"efi",
+        "blocks":"524288",
+        "fs_type":"vfat",
+        "mount":"/boot",
+        "features": ["hybrid"]
+      },
+      "2":{
+        "label":"BIOS-BOOT",
+        "type":"bios",
+        "blocks":"4096"
+      },
+      "3":{
+        "label":"KURMA-A",
+        "uuid":"aa608ef3-dc7d-4bdd-b2b2-b87b3832f47f",
+        "type":"kurmaos-marker",
+        "blocks":"4096",
+        "features": ["prioritize", "verity"]
+      },
+      "4":{
+        "label":"KURMA-B",
+        "uuid":"16294bcb-da53-458d-bc1c-7dbf84893896",
+        "type":"kurmaos-marker",
+        "blocks":"4096"
+      },
+      "5":{
+        "label":"OEM",
+        "type":"data",
+        "blocks":"262144",
+        "fs_type":"ext4",
+        "mount": "/boot/oem"
+      },
+      "6":{
+        "label":"ROOT",
+        "type":"kurmaos-resize",
+        "blocks":"2097152",
+        "fs_type":"ext4",
+        "mount":"/"
+      }
+    },
+    "vm":{
+      "6":{
+        "label":"ROOT",
+        "blocks":"12943360"
+      }
+    }
+  }
+}

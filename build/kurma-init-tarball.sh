@@ -17,7 +17,11 @@ ln -s kurma $dir/init
 
 # copy in the acis
 mkdir $dir/acis
-cp ../bin/*.aci $dir/acis/
+cp ../bin/stager-container.aci $dir/acis/
+cp ../bin/busybox.aci $dir/acis/
+cp ../bin/cni-netplugin.aci $dir/acis/
+cp ../bin/console.aci $dir/acis/
+cp ../bin/kurma-api.aci $dir/acis/
 
 # copy in the kernel modules
 rsync -a /lib/modules $dir/lib
@@ -56,7 +60,7 @@ cp /usr/bin/cgpt $dir/bin/cgpt
 
 # setup etc
 mkdir -p $dir/etc/ssl/certs
-cp kurma-init/kurma.json $dir/etc/kurma.json
+cp kurma-init/kurma.yml $dir/etc/kurma.yml
 touch $dir/etc/mtab
 touch $dir/etc/resolv.conf
 echo "LSB_VERSION=1.4" > $dir/etc/lsb-release
@@ -68,6 +72,19 @@ echo "VERSION=$version" >> $dir/etc/os-release
 echo "ID=kurmaos" >> $dir/etc/os-release
 echo "PRETTY_NAME=KurmaOS v$version" >> $dir/etc/os-release
 
+# copy udev
+cp $(which udevd) $dir/bin/
+cp $(which udevadm) $dir/bin/
+cp kurma-init/udev-setup.sh $dir/bin/
+chmod a+x $dir/bin/udev-setup.sh
+cp -r /lib/udev $dir/lib/
+mkdir -p $dir/etc/udev/rules.d
+touch $dir/etc/udev/rules.d/80-net-name-slot.rules
+ln -s /lib/udev/hwdb.d $dir/etc/udev/hwdb.d
+
+# update the hardware db
+udevadm hwdb --update --root=$dir
+
 # copy kurma and needed dynamic libraries
 ln -s lib $dir/lib64
 LD_TRACE_LOADED_OBJECTS=1 $dir/kurma | grep so | grep -v linux-vdso.so.1 \
@@ -77,6 +94,18 @@ LD_TRACE_LOADED_OBJECTS=1 $dir/kurma | grep so | grep -v linux-vdso.so.1 \
     | sed -e 's/ (0.*)//' \
     | xargs -I % cp % $dir/lib/
 LD_TRACE_LOADED_OBJECTS=1 $dir/bin/resize2fs | grep so | grep -v linux-vdso.so.1 \
+    | sed -e '/^[^\t]/ d' \
+    | sed -e 's/\t//' \
+    | sed -e 's/.*=..//' \
+    | sed -e 's/ (0.*)//' \
+    | xargs -I % cp % $dir/lib/
+LD_TRACE_LOADED_OBJECTS=1 $dir/bin/udevd | grep so | grep -v linux-vdso.so.1 \
+    | sed -e '/^[^\t]/ d' \
+    | sed -e 's/\t//' \
+    | sed -e 's/.*=..//' \
+    | sed -e 's/ (0.*)//' \
+    | xargs -I % cp % $dir/lib/
+LD_TRACE_LOADED_OBJECTS=1 $dir/bin/udevadm | grep so | grep -v linux-vdso.so.1 \
     | sed -e '/^[^\t]/ d' \
     | sed -e 's/\t//' \
     | sed -e 's/.*=..//' \

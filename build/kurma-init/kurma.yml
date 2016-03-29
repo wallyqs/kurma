@@ -1,0 +1,71 @@
+---
+# Configure where to locate OEM configuration
+oemConfig:
+  device: LABEL=OEM
+  configPath: /kurma_oem.json
+
+# Base system configuration
+hostname: kurmaos
+parentCgroupName: kurma
+defaultStagerImage: apcera.com/kurma/stager/container
+modules:
+  - nf_nat
+  - bridge
+  - br_netfilter
+  - nf_conntrack_ipv4
+  - xt_addrtype
+  - ipt_MASQUERADE
+  - xt_conntrack
+  - iptable_nat
+  - iptable_filter
+  - veth
+
+# Configure disk mounts
+disks:
+  - device: LABEL=ROOT
+    fstype: ext4
+    options: "data=ordered,commit=5"
+    usage:  [ images, pods, volumes ]
+    resize: true
+
+# Configure network devices
+networkConfig:
+  interfaces:
+    - device: lo
+      address: 127.0.0.1/8
+    - device: "eth.+"
+      dhcp: true
+
+# Configure the console
+console:
+  enabled: true
+  password: kurma
+  aci: apcera.com/kurma/console
+
+# Configure pod networking plugins
+podNetworks:
+  - name: bridge
+    aci: apcera.com/kurma/cni-netplugin
+    default: true
+    containerInterface: "veth+{{shortuuid}}"
+    type: bridge
+    bridge: bridge0
+    isGateway: true
+    ipMasq: true
+    ipam:
+      type: host-local
+      subnet: 10.220.0.0/16
+      routes: [ { dst: 0.0.0.0/0 } ]
+
+# Initial pods to launch on startup
+initialPods:
+  - name: kurma-api
+    apps:
+      - name: kurma-api
+        image:
+          name: apcera.com/kurma/api
+    isolators:
+      - name: os/linux/namespaces
+        value:
+          net: host
+          uts: host

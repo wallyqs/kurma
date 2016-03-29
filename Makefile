@@ -14,14 +14,18 @@ ifeq ($(UNAMES),Darwin)
 user  := 1000
 group := 50
 endif
-DOCKER := docker run --rm -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -e GOPATH=${GOPATH} --user=${user}\:${group} apcera/kurma-kernel
+
+BASE_DOCKER  := docker run --rm -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -e GOPATH=${GOPATH}
+DOCKER_IMAGE := apcera/kurma-kernel
+DOCKER       := ${BASE_DOCKER} --user=${user}\:${group} ${DOCKER_IMAGE}
+DOCKER_PRIV  := ${BASE_DOCKER} --privileged ${DOCKER_IMAGE}
 
 # Setup command for locally running Kurma on Linux, or running it within Docker
 # on OS X.
 RUN_CONFIG := build/local-kurmad.yml
 RUN_CMD := sudo env RUN_CONFIG=${RUN_CONFIG}
 ifeq ($(UNAMES),Darwin)
-RUN_CMD := docker run --rm -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -v /tmp -e RUN_CONFIG=${RUN_CONFIG} --user=0:0 --privileged -i -t apcera/kurma-kernel
+RUN_CMD := ${BASE_DOCKER} -v /tmp -e RUN_CONFIG=${RUN_CONFIG} --privileged -i -t ${DOCKER_IMAGE}
 endif
 
 # If STATIC=1 is set in the command line, then configure static compilation for
@@ -33,12 +37,14 @@ endif
 # If the version flag is set, then ensure it will be passed down to Docker.
 ifdef $(VERSION)
 DOCKER += -e VERSION=${VERSION}
+DOCKER_PRIV += -e VERSION=${VERSION}
 endif
 
 # If we're already running within in Docker (such as on CI), then blank out the
 # Docker command line.
 ifeq ($(IN_DOCKER),1)
 DOCKER :=
+DOCKER_PRIV :=
 endif
 
 .DEFAULT_GOAL := local
@@ -54,9 +60,8 @@ download: ## Download common pre-built assets from Kurma's CI
 	@curl -L -o bin/busybox.aci http://ci.kurma.io/repository/download/Artifacts_ACIs_Busybox/master.tcbuildtag/busybox.aci?guest=1
 	@echo 'Downloading cni-netplugin.aci'
 	@curl -L -o bin/cni-netplugin.aci http://ci.kurma.io/repository/download/Artifacts_ACIs_CniNetplugin/master.tcbuildtag/cni-netplugin.aci?guest=1
-	@echo 'Downloading kurmaOS services (ntp.aci and udev.aci)'
+	@echo 'Downloading kurmaOS services (ntp.aci)'
 	@curl -L -o bin/ntp.aci http://ci.kurma.io/repository/download/Artifacts_ACIs_KurmaOSServices/master.tcbuildtag/ntp.aci?guest=1
-	@curl -L -o bin/udev.aci http://ci.kurma.io/repository/download/Artifacts_ACIs_KurmaOSServices/master.tcbuildtag/udev.aci?guest=1
 
 
 #
@@ -84,7 +89,8 @@ kurma-init:
 #
 # kurmaOS init image
 #
-bin/kurma-init.tar.gz: kurma-init bin/stager-container.aci bin/console.aci bin/ntp.aci bin/udev.aci bin/busybox.aci bin/cni-netplugin.aci
+.PHONY: bin/kurma-init.tar.gz
+bin/kurma-init.tar.gz:
 	$(DOCKER) ./build/kurma-init-tarball.sh
 
 #
@@ -139,13 +145,26 @@ cni-netplugin-aci: bin/cni-netplugin.aci
 bin/ntp.aci:
 	$(DOCKER) ./build/aci/ntp/build.sh $@
 
-## udev
-bin/udev.aci:
-	$(DOCKER) ./build/aci/udev/build.sh $@
-
 ## console
 bin/console.aci: kurma-cli
 	$(DOCKER) ./build/aci/console/build.sh $@
+
+
+#
+# VM Images
+#
+.PHONY: vm-rawdisk vm-virtualbox vm-vmware
+vm-rawdisk: ## Build the raw disk image for kurmaOS
+	$(DOCKER_PRIV) ./build/vms/raw_disk.sh
+vm-aws:  ## Build an AWS image
+	$(DOCKER_PRIV) ./build/vms/aws/oem.sh
+	$(BASE_DOCKER) apcera/docker-aws-tools ./build/vms/aws/import.sh
+vm-openstack: vm-rawdisk ## Build an OpenStack VM image
+	$(DOCKER) ./build/vms/openstack/build.sh
+vm-virtualbox: vm-rawdisk ## Build a Virtualbox VM image
+	$(DOCKER) ./build/vms/virtualbox/build.sh
+vm-vmware: vm-rawdisk ## Build a VMware VM image
+	$(DOCKER_PRIV) ./build/vms/vmware/build.sh
 
 
 #

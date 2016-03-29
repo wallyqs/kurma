@@ -17,9 +17,5 @@ app:
     value: true
   - name: os/linux/privileged
     value: true
-  - name: os/linux/namespaces
-    value:
-      net: host
-      uts: host
 dependencies:
   - imageName: apcera.com/kurma/busybox
