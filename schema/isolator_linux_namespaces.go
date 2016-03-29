@@ -101,3 +101,37 @@ func (n *LinuxNamespaces) SetUser(val LinuxNamespaceValue) {
 func (n *LinuxNamespaces) SetUTS(val LinuxNamespaceValue) {
 	n.ns[nsUTS] = val
 }
+
+// The appc/spec doesn't have a method to generate a new isolator live in
+// code. You can instantiate a new one, but it its parsed interface version of
+// the object is a private field. To get one programmatically and have it be
+// usable, then we need to loop it through json.
+func GenerateHostNamespaceIsolator() (*types.Isolator, error) {
+	n := &LinuxNamespaces{
+		ns: map[string]LinuxNamespaceValue{
+			nsIPC:  LinuxNamespaceHost,
+			nsNet:  LinuxNamespaceHost,
+			nsUser: LinuxNamespaceHost,
+			nsUTS:  LinuxNamespaceHost,
+		},
+	}
+
+	var interim struct {
+		Name  string              `json:"name"`
+		Value types.IsolatorValue `json:"value"`
+	}
+	interim.Name = LinuxNamespacesName
+	interim.Value = n
+
+	b, err := json.Marshal(interim)
+	if err != nil {
+		return nil, err
+	}
+
+	var i types.Isolator
+	if err := i.UnmarshalJSON(b); err != nil {
+		return nil, err
+	}
+
+	return &i, nil
+}

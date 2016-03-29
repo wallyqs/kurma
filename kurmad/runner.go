@@ -248,7 +248,7 @@ func (r *runner) startDaemon() error {
 // startInitialPods runs the initial pods from the configuration file.
 func (r *runner) startInitialPods() error {
 	for d, ip := range r.config.InitialPods {
-		name, podManifest, err := ip.process(r)
+		name, podManifest, err := ip.Process(r.imageManager)
 		if name == "" {
 			name = fmt.Sprintf("initial-pod-%d", d+1)
 		}

@@ -20,6 +20,7 @@ import (
 
 	"github.com/apcera/kurma/pkg/aciremote"
 	"github.com/apcera/kurma/pkg/backend"
+	"github.com/apcera/kurma/pkg/capabilities"
 	"github.com/apcera/kurma/pkg/daemon"
 	"github.com/apcera/kurma/pkg/devices"
 	"github.com/apcera/kurma/pkg/imagestore"
@@ -32,6 +33,8 @@ import (
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
 	"github.com/vishvananda/netlink"
+
+	kschema "github.com/apcera/kurma/schema"
 )
 
 // switchRoot handles copying all of the files off the initial initramfs root
@@ -209,6 +212,11 @@ func (r *runner) createSystemMounts() error {
 			return fmt.Errorf("failed to mount %q: %v", location, err)
 		}
 	}
+
+	// Now that proc is mounted, refresh the capabilities list so it can read the
+	// cap_last_cap from /proc.
+	capabilities.RefreshCapabilities()
+
 	return nil
 }
 
@@ -223,16 +231,25 @@ func (r *runner) configureEnvironment() error {
 // mountCgroups handles creating the individual cgroup endpoints that are
 // necessary.
 func (r *runner) mountCgroups() error {
-	// Default cgroups to mount and utilize.
-	cgroupTypes := []string{
-		"blkio",
-		"cpu",
-		"cpuacct",
-		"devices",
-		"memory",
-	}
-
 	r.log.Info("Setting up cgroups")
+
+	// Check for available cgroup types and mount them
+	cgroupTypes := make([]string, 0)
+	err := proc.ParseSimpleProcFile("/proc/cgroups", nil,
+		func(line, index int, elem string) error {
+			if index != 0 {
+				return nil
+			}
+			if strings.HasPrefix(elem, "#") {
+				return nil
+			}
+			cgroupTypes = append(cgroupTypes, elem)
+			return nil
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to get list of available cgroups: %v", err)
+	}
 
 	// mount the cgroups
 	for _, cgrouptype := range cgroupTypes {
@@ -351,15 +368,6 @@ func (r *runner) mountDisks() error {
 		}
 	}
 
-	return nil
-}
-
-// rescanImages will recheck for any images now that the disks have been
-// mounted.
-func (r *runner) rescanImages() error {
-	if err := r.imageManager.Rescan(); err != nil {
-		return fmt.Errorf("Failed to scan for existing pod images: %v", err)
-	}
 	return nil
 }
 
@@ -562,6 +570,7 @@ func (r *runner) displayNetwork() error {
 
 		r.log.Infof("- %s: %s", in.Name, strings.Join(addresses, ", "))
 	}
+
 	return nil
 }
 
@@ -583,12 +592,22 @@ func (r *runner) createImageManager() error {
 // createPodManager creates the pod manager to allow pods to be
 // launched.
 func (r *runner) createPodManager() error {
+	// retrieve the default stager
+	if r.config.DefaultStagerImage == "" {
+		return fmt.Errorf("a defaultStagerImage setting must be specified")
+	}
+	stagerHash, _, err := aciremote.LoadImage(r.config.DefaultStagerImage, true, r.imageManager)
+	if err != nil {
+		return fmt.Errorf("failed to fetch default stager image %q: %v", r.config.DefaultStagerImage, err)
+	}
+
 	mopts := &podmanager.Options{
-		PodDirectory:       filepath.Join(kurmaPath, string(kurmaPathPods)),
-		VolumeDirectory:    filepath.Join(kurmaPath, string(kurmaPathVolumes)),
-		RequiredNamespaces: r.config.RequiredNamespaces,
-		ParentCgroupName:   r.config.ParentCgroupName,
-		Log:                r.log.Clone(),
+		PodDirectory:          filepath.Join(kurmaPath, string(kurmaPathPods)),
+		LibcontainerDirectory: filepath.Join(kurmaPath, string(kurmaPathPods), "libcontainer"),
+		VolumeDirectory:       filepath.Join(kurmaPath, string(kurmaPathVolumes)),
+		ParentCgroupName:      r.config.ParentCgroupName,
+		DefaultStagerHash:     stagerHash,
+		Log:                   r.log.Clone(),
 	}
 	m, err := podmanager.NewManager(r.imageManager, nil, mopts)
 	if err != nil {
@@ -707,107 +726,80 @@ func (r *runner) startServer() error {
 	return nil
 }
 
-// startInitPods launches the initial pods that are specified in the
+// startInitialPods launches the initial pods that are specified in the
 // configuration.
-func (r *runner) startInitPods() error {
-	for _, img := range r.config.InitPods {
-		func() {
-			_, manifest, err := aciremote.LoadImage(img, true, r.imageManager)
-			if err != nil {
-				r.log.Warnf("Failed to load image %q: %v", img, err)
-				return
-			}
+func (r *runner) startInitialPods() error {
+	for d, ip := range r.config.InitialPods {
+		name, podManifest, err := ip.Process(r.imageManager)
+		if name == "" {
+			name = fmt.Sprintf("pod%d", d+1)
+		}
+		if err != nil {
+			r.log.Errorf("Failed to configure pod %q: %v", name, err)
+			continue
+		}
 
-			// FIXME
-			if _, err := r.podManager.Create("", schema.BlankPodManifest(), nil); err != nil {
-				r.log.Warnf("Failed to launch pod %s: %v", manifest.Name.String(), err)
-				return
-			}
-			r.log.Infof("Launched pod %s", manifest.Name.String())
-		}()
+		pod, err := r.podManager.Create(name, podManifest, nil)
+		if err != nil {
+			r.log.Errorf("Failed to launch pod %q: %v", name, err)
+			continue
+		}
+		r.log.Infof("Launched pod %q.", pod.Name())
 	}
 	return nil
 }
 
-// startUdev handles launching the udev service.
-func (r *runner) startUdev() error {
-	if r.config.Services.Udev.Enabled == nil || !*r.config.Services.Udev.Enabled {
-		r.log.Trace("Skipping udev")
-		return nil
-	}
-
-	// FIXME make this configurable on the pod somehow
-	r.podManager.SwapDirectory(systemPodsPath, func() {
-		_, _, err := aciremote.LoadImage(r.config.Services.Udev.ACI, true, r.imageManager)
-		if err != nil {
-			r.log.Warnf("Failed to load udev image: %v", err)
-			return
-		}
-
-		// FIXME
-		pod, err := r.podManager.Create("udev", schema.BlankPodManifest(), nil)
-		if err != nil {
-			r.log.Warnf("Failed to launch udev: %v", err)
-			return
-		} else {
-			r.log.Debug("Started udev")
-			pod.Wait()
-		}
-	})
-	return nil
-}
-
-// startNTP handles launching the udev service.
-func (r *runner) startNTP() error {
-	if r.config.Services.NTP.Enabled == nil || !*r.config.Services.NTP.Enabled {
-		r.log.Trace("Skipping NTP")
-		return nil
-	}
-
-	r.log.Info("Updating system clock via NTP...")
-
-	_, manifest, err := aciremote.LoadImage(r.config.Services.NTP.ACI, true, r.imageManager)
+// runUdev handles launching the udev service.
+func (r *runner) runUdev() error {
+	output, err := exec.Command("/bin/udev-setup.sh").CombinedOutput()
 	if err != nil {
-		r.log.Warnf("Failed to load NTP image: %v", err)
-		return nil
+		r.log.Warnf("Failed to run udev: %s", string(output))
 	}
-
-	// add the ntp servers on as environment variables
-	manifest.App.Environment.Set(
-		"NTP_SERVERS", strings.Join(r.config.Services.NTP.Servers, " "))
-
-	// FIXME
-	if _, err := r.podManager.Create("ntp", schema.BlankPodManifest(), nil); err != nil {
-		r.log.Warnf("Failed to start NTP: %v", err)
-		return nil
-	}
-	r.log.Debug("Started NTP")
 	return nil
 }
 
 // startConsole handles launching the udev service.
 func (r *runner) startConsole() error {
-	if r.config.Services.Console.Enabled == nil || !*r.config.Services.Console.Enabled {
+	if r.config.Console.Enabled == nil || !*r.config.Console.Enabled {
 		r.log.Trace("Skipping console")
 		return nil
 	}
 
-	_, manifest, err := aciremote.LoadImage(r.config.Services.Console.ACI, true, r.imageManager)
+	// Get the pod manifest
+	_, podManifest, err := r.config.Console.Process(r.imageManager)
 	if err != nil {
-		r.log.Warnf("Failed to load console image: %v", err)
+		r.log.Warnf("Failed to fetch console pod: %v", err)
 		return nil
 	}
 
-	// send in the configuration information
-	if r.config.Services.Console.Password != nil {
-		manifest.App.Environment.Set(
-			"CONSOLE_PASSWORD", *r.config.Services.Console.Password)
+	// Change the pod manifest to add a host namespace isolator
+	i, err := kschema.GenerateHostNamespaceIsolator()
+	if err != nil {
+		r.log.Warnf("Failed to configure console to use host namespaces: %v", err)
+		return nil
 	}
-	manifest.App.Environment.Set(
-		"CONSOLE_KEYS", strings.Join(r.config.Services.Console.SSHKeys, "\n"))
+	podManifest.Isolators = append(podManifest.Isolators, *i)
 
-	// FIXME
-	if _, err := r.podManager.Create("console", schema.BlankPodManifest(), nil); err != nil {
+	// send in the configuration information
+	for i, runtimeApp := range podManifest.Apps {
+		if runtimeApp.App == nil {
+			imageManifest := r.imageManager.GetImage(runtimeApp.Image.ID.String())
+			if imageManifest == nil {
+				r.log.Warn("Failed to locate console image")
+				return nil
+			}
+			runtimeApp.App = imageManifest.App
+		}
+		if r.config.Console.Password != nil {
+			runtimeApp.App.Environment.Set(
+				"CONSOLE_PASSWORD", *r.config.Console.Password)
+		}
+		runtimeApp.App.Environment.Set(
+			"CONSOLE_KEYS", strings.Join(r.config.Console.SSHKeys, "\n"))
+		podManifest.Apps[i] = runtimeApp
+	}
+
+	if _, err := r.podManager.Create("console", podManifest, nil); err != nil {
 		return fmt.Errorf("Failed to start console: %v", err)
 	}
 	r.log.Debug("Started console")
@@ -815,7 +807,10 @@ func (r *runner) startConsole() error {
 }
 
 func (r *runner) setupDiscoveryProxy() error {
-	uri, err := url.Parse(r.config.NetworkConfig.ProxyURL)
+	if r.config.NetworkConfig.ProxyURL == "" {
+		return nil
+	}
+	uri, err := url.ParseRequestURI(r.config.NetworkConfig.ProxyURL)
 	if err != nil {
 		r.log.Warnf("Failed to parse proxy url: %v", err)
 		return nil
@@ -839,5 +834,19 @@ func (r *runner) setupDiscoveryProxy() error {
 	}
 	transport.Proxy = http.ProxyURL(uri)
 
+	return nil
+}
+
+// prefetchImages is used to fetch specified images on start up to pre-load
+// them.
+func (r *runner) prefetchImages() error {
+	for _, aci := range r.config.PrefetchImages {
+		_, _, err := aciremote.LoadImage(aci, true, r.imageManager)
+		if err != nil {
+			r.log.Warnf("Failed to fetch image %q: %v", aci, err)
+			continue
+		}
+		r.log.Debugf("Fetched image %s", aci)
+	}
 	return nil
 }

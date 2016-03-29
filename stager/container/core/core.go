@@ -19,6 +19,7 @@ func Run() error {
 		appWaitch:     make(map[string]chan struct{}),
 	}
 	if err := cs.run(); err != nil {
+		cs.log.Flush()
 		return err
 	}
 	runtime.Goexit()
