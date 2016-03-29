@@ -6,8 +6,11 @@ cd $(dirname $0)
 
 set -e -x
 
+source ../../trap_add.sh
+source ../setup_loopback.sh
+
 dir=$(mktemp -d)
-trap "rm -rf $dir" EXIT
+trap_add "rm -rf $dir" EXIT
 chmod 755 $dir
 
 # Mount the disk and copy in the OEM grub.cfg

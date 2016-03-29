@@ -6,6 +6,9 @@ cd $(dirname $0)
 
 set -e -x
 
+source ../trap_add.sh
+source ./setup_loopback.sh
+
 # Create and mount the disk
 ./lib/disk_util --disk_layout=base format $BASE_PATH/bin/kurmaos-disk.img
 ./lib/disk_util --disk_layout=base mount $BASE_PATH/bin/kurmaos-disk.img /tmp/rootfs
