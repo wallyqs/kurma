@@ -141,7 +141,9 @@ func (d *networkDriver) call(exec string, args []string, val interface{}) error 
 	// if exit code wasn't 0, return stderr value as the error
 	if exitCode == 0 {
 		if val != nil {
-			return json.Unmarshal(outBytes, &val)
+			if err := json.Unmarshal(outBytes, &val); err != nil {
+				return fmt.Errorf("failed to unmarshal response: %v -- %s", err, string(outBytes))
+			}
 		}
 	} else {
 		return fmt.Errorf("exited %d: %s", exitCode, string(outBytes))

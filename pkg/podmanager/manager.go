@@ -269,16 +269,6 @@ func (manager *Manager) Pod(uuid string) backend.Pod {
 	return manager.pods[uuid]
 }
 
-// SwapDirectory can be used to temporarily use a different pod path for
-// an operation. This is a temporary hack util a Pod object can specify
-// its own path.
-func (manager *Manager) SwapDirectory(podDirectory string, f func()) {
-	dir := manager.Options.PodDirectory
-	manager.Options.PodDirectory = podDirectory
-	defer func() { manager.Options.PodDirectory = dir }()
-	f()
-}
-
 // getVolumePath will get the absolute path on the host to the named volume. It
 // will also ensure that the volume name exists within the volumes directory.
 func (manager *Manager) getVolumePath(name string) (string, error) {

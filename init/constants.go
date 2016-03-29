@@ -7,6 +7,7 @@ var (
 	// host system to create and manage pods. These functions focus primarily on
 	// runtime actions that must be done each time on boot.
 	setupFunctions = []func(*runner) error{
+		// Basic system startup and configuration
 		(*runner).startSignalHandling,
 		(*runner).switchRoot,
 		(*runner).createSystemMounts,
@@ -15,31 +16,40 @@ var (
 		(*runner).configureEnvironment,
 		(*runner).mountCgroups,
 		(*runner).loadModules,
+
+		// Prepping for starting managers
 		(*runner).createDirectories,
-		(*runner).createImageManager,
-		(*runner).createPodManager,
-		(*runner).startUdev,
+		(*runner).runUdev,
 		(*runner).mountDisks,
 		(*runner).cleanOldPods,
-		(*runner).rescanImages,
+		(*runner).createImageManager,
 		(*runner).loadAvailableImages,
+		(*runner).createPodManager,
+
+		// Final system configuration and mark the boot as successful
 		(*runner).configureHostname,
 		(*runner).configureNetwork,
-		(*runner).createNetworkManager,
 		(*runner).markBootSuccessful,
+
+		// Some early image retrieval before starting initial processes
 		(*runner).setupDiscoveryProxy,
-		(*runner).startNTP,
+		(*runner).prefetchImages,
+
+		// Setup networking plugins
+		(*runner).createNetworkManager,
+
+		// Launch necessary services
 		(*runner).startServer,
-		(*runner).startInitPods,
+		(*runner).rootReadonly,
+		(*runner).startInitialPods,
 		(*runner).displayNetwork,
 		(*runner).startConsole,
-		(*runner).rootReadonly,
 	}
 )
 
 const (
 	// configurationFile is the source of the initial disk based configuration.
-	configurationFile = "/etc/kurma.json"
+	configurationFile = "/etc/kurma.yml"
 
 	// The default location where cgroups should be mounted. This is a constant
 	// because it is referenced in multiple functions.

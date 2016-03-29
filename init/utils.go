@@ -5,12 +5,15 @@ package init
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 
+	"github.com/ghodss/yaml"
 	"github.com/vishvananda/netlink"
 )
 
@@ -153,6 +156,16 @@ func shouldFormatDisk(diskConfig *kurmaDiskConfiguration, currentfstype string) 
 // into a *kurmaConfig object. Note that this function will return nil, nil if
 // the specified path was not found.
 func getConfigurationFromFile(file string) (*kurmaConfig, error) {
+	var unmarshalFunc func([]byte, interface{}) error
+	switch filepath.Ext(file) {
+	case ".json":
+		unmarshalFunc = json.Unmarshal
+	case ".yml", ".yaml":
+		unmarshalFunc = yaml.Unmarshal
+	default:
+		return nil, fmt.Errorf("Unrecognized configation file format, please use JSON or YAML")
+	}
+
 	f, err := os.Open(file)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -162,8 +175,13 @@ func getConfigurationFromFile(file string) (*kurmaConfig, error) {
 	}
 	defer f.Close()
 
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read configuration file: %v", err)
+	}
+
 	var config *kurmaConfig
-	if err := json.NewDecoder(f).Decode(&config); err != nil {
+	if err := unmarshalFunc(b, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse configuration file: %v", err)
 	}
 	return config, nil

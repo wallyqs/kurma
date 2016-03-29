@@ -120,11 +120,6 @@ type PodManager interface {
 	// the UUID does not exist.
 	Pod(uuid string) Pod
 
-	// SwapDirectory can be used to temporarily use a different pod path for an
-	// operation. This is a temporary hack util a Pod object can specify its own
-	// path.
-	SwapDirectory(podDirectory string, f func())
-
 	// Shutdown requests that the pod manager shut down running pods to prepare to
 	// exit.
 	Shutdown()

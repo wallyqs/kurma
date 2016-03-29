@@ -44,14 +44,14 @@ type Config struct {
 	VolumesDirectory   string                `json:"volumesDirectory,omitempty"`
 	DefaultStagerImage string                `json:"defaultStagerImage,omitempty"`
 	PrefetchImages     []string              `json:"prefetchImages,omitempty"`
-	InitialPods        []*initialPodManifest `json:"initialPods,omitempty"`
+	InitialPods        []*InitialPodManifest `json:"initialPods,omitempty"`
 	PodNetworks        []*types.NetConf      `json:"podNetworks"`
 }
 
-// initialPodManifest is used to handle the inital pod configuration section,
+// InitialPodManifest is used to handle the inital pod configuration section,
 // where either an image specification string can be given, or a partial pod
 // manifest.
-type initialPodManifest struct {
+type InitialPodManifest struct {
 	name  string
 	image string
 	pod   *schema.PodManifest
@@ -59,7 +59,7 @@ type initialPodManifest struct {
 
 // process handles processing the initial configuration input and turning it
 // into a ready to run pod manifest.
-func (ip *initialPodManifest) process(r *runner) (string, *schema.PodManifest, error) {
+func (ip *InitialPodManifest) Process(imageManager backend.ImageManager) (string, *schema.PodManifest, error) {
 	if ip.pod != nil {
 		for i, app := range ip.pod.Apps {
 			if app.Image.ID.Val != "" {
@@ -67,7 +67,7 @@ func (ip *initialPodManifest) process(r *runner) (string, *schema.PodManifest, e
 			}
 
 			version, _ := app.Image.Labels.Get("version")
-			hash, image := r.imageManager.FindImage(app.Image.Name.String(), version)
+			hash, image := imageManager.FindImage(app.Image.Name.String(), version)
 			if hash == "" {
 				return "", nil, fmt.Errorf("unable to locate image for %s", app.Image.Name)
 			}
@@ -88,9 +88,13 @@ func (ip *initialPodManifest) process(r *runner) (string, *schema.PodManifest, e
 		return ip.name, nil, fmt.Errorf("failed to get a valid pod manifest")
 	}
 
-	hash, imageManifest, err := aciremote.LoadImage(ip.image, true, r.imageManager)
-	if err != nil {
-		return ip.name, nil, fmt.Errorf("failed to get a retrieve image %q: %v", ip.image, err)
+	hash, imageManifest := imageManager.FindImage(ip.image, "")
+	if imageManifest == nil {
+		var err error
+		hash, imageManifest, err = aciremote.LoadImage(ip.image, true, imageManager)
+		if err != nil {
+			return ip.name, nil, fmt.Errorf("failed to get a retrieve image %q: %v", ip.image, err)
+		}
 	}
 
 	appname, err := convertACIdentifierToACName(imageManifest.Name)
@@ -117,7 +121,7 @@ func (ip *initialPodManifest) process(r *runner) (string, *schema.PodManifest, e
 }
 
 // UnmarshalJSON handles deciding which avenue to parse the provided JSON input.
-func (ip *initialPodManifest) UnmarshalJSON(b []byte) error {
+func (ip *InitialPodManifest) UnmarshalJSON(b []byte) error {
 	switch b[0] {
 	case '"':
 		return ip.unmarshalImageUrl(b)
@@ -131,12 +135,12 @@ func (ip *initialPodManifest) UnmarshalJSON(b []byte) error {
 
 // unmarshalImageUrl handles unmarshaling just an image specification into a
 // string that will be used later in process.
-func (ip *initialPodManifest) unmarshalImageUrl(b []byte) error {
+func (ip *InitialPodManifest) unmarshalImageUrl(b []byte) error {
 	return json.Unmarshal(b, &ip.image)
 }
 
 // unmarshalPodManifest handles unmarshaling the input pod manifest.
-func (ip *initialPodManifest) unmarshalPodManifest(b []byte) error {
+func (ip *InitialPodManifest) unmarshalPodManifest(b []byte) error {
 	// first unmarshal some extra fields
 	extra := struct {
 		Name string `json:"name"`

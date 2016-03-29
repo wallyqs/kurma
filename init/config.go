@@ -3,35 +3,41 @@
 package init
 
 import (
+	"fmt"
+
+	"github.com/apcera/kurma/kurmad"
+	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/kurma/pkg/networkmanager/types"
+	"github.com/appc/spec/schema"
 )
 
 type kurmaConfig struct {
-	Debug              bool                      `json:"debug,omitempty"`
-	SuccessfulBoot     *string                   `json:"-"`
-	OEMConfig          *OEMConfig                `json:"oem_config"`
-	Datasources        []string                  `json:"datasources,omitempty"`
-	Hostname           string                    `json:"hostname,omitempty"`
-	NetworkConfig      kurmaNetworkConfig        `json:"network_config,omitempty"`
-	Modules            []string                  `json:"modules,omitmepty"`
-	Disks              []*kurmaDiskConfiguration `json:"disks,omitempty"`
-	ParentCgroupName   string                    `json:"parent_cgroup_name,omitempty"`
-	RequiredNamespaces []string                  `json:"required_namespaces,omitempty"`
-	Services           kurmaServices             `json:"services,omitempty"`
-	InitPods           []string                  `json:"init_pods,omitempty"`
-	PodNetworks        []*types.NetConf          `json:"pod_networks,omitempty"`
+	Debug              bool                         `json:"debug,omitempty"`
+	SuccessfulBoot     *string                      `json:"-"`
+	OEMConfig          *OEMConfig                   `json:"oemConfig"`
+	Datasources        []string                     `json:"datasources,omitempty"`
+	Hostname           string                       `json:"hostname,omitempty"`
+	NetworkConfig      kurmaNetworkConfig           `json:"networkConfig,omitempty"`
+	Modules            []string                     `json:"modules,omitmepty"`
+	Disks              []*kurmaDiskConfiguration    `json:"disks,omitempty"`
+	ParentCgroupName   string                       `json:"parentCgroupName,omitempty"`
+	DefaultStagerImage string                       `json:"defaultStagerImage,omitempty"`
+	PrefetchImages     []string                     `json:"prefetchImages,omitempty"`
+	InitialPods        []*kurmad.InitialPodManifest `json:"initialPods,omitempty"`
+	PodNetworks        []*types.NetConf             `json:"podNetworks,omitempty"`
+	Console            kurmaConsoleService          `json:"console,omitempty"`
 }
 
 type OEMConfig struct {
 	Device     string `json:"device"`
-	ConfigPath string `json:"config_path"`
+	ConfigPath string `json:"configPath"`
 }
 
 type kurmaNetworkConfig struct {
 	DNS        []string                 `json:"dns,omitempty"`
 	Gateway    string                   `json:"gateway,omitempty"`
 	Interfaces []*kurmaNetworkInterface `json:"interfaces,omitempty"`
-	ProxyURL   string                   `json:"proxy_url,omitempty"`
+	ProxyURL   string                   `json:"proxyUrl,omitempty"`
 }
 
 type kurmaNetworkInterface struct {
@@ -63,29 +69,25 @@ const (
 	systemPodsPath = "/var/kurma/system"
 )
 
-type kurmaServices struct {
-	NTP     kurmaNTPService     `json:"ntp,omitempty"`
-	Udev    kurmaGenericService `json:"udev,omitempty"`
-	Console kurmaConsoleService `json:"console,omitempty"`
-}
-
-type kurmaGenericService struct {
-	Enabled *bool  `json:"enabled,omitempty"`
-	ACI     string `json:"aci,omitempty"`
-}
-
-type kurmaNTPService struct {
-	Enabled  *bool    `json:"enabled,omitempty"`
-	ACI      string   `json:"aci,omitempty"`
-	Servers  []string `json:"servers,omitempty"`
-	Interval string   `json:"interval,omitempty"`
-}
-
 type kurmaConsoleService struct {
-	Enabled  *bool    `json:"enabled,omitempty"`
-	ACI      string   `json:"aci,omitempty"`
-	Password *string  `json:"password,omitmepty"`
-	SSHKeys  []string `json:"ssh_keys,omitempty"`
+	Enabled     *bool                      `json:"enabled,omitempty"`
+	ACI         *kurmad.InitialPodManifest `json:"aci,omitempty"`
+	PodManifest *kurmad.InitialPodManifest `json:"podManifest,omitempty"`
+	Password    *string                    `json:"password,omitmepty"`
+	SSHKeys     []string                   `json:"sshKeys,omitempty"`
+}
+
+func (s *kurmaConsoleService) Process(imageManager backend.ImageManager) (string, *schema.PodManifest, error) {
+	if s.ACI != nil && s.PodManifest != nil {
+		return "", nil, fmt.Errorf(`both "aci" and "podManifest" cannot be set at the same time`)
+	}
+	if s.ACI == nil && s.PodManifest == nil {
+		return "", nil, fmt.Errorf(`must set either "aci" or "podManifest"`)
+	}
+	if s.ACI != nil {
+		return s.ACI.Process(imageManager)
+	}
+	return s.PodManifest.Process(imageManager)
 }
 
 func (cfg *kurmaConfig) mergeConfig(o *kurmaConfig) {
@@ -132,47 +134,34 @@ func (cfg *kurmaConfig) mergeConfig(o *kurmaConfig) {
 		cfg.Disks = o.Disks
 	}
 
-	// replace cgroup name
 	if o.ParentCgroupName != "" {
 		cfg.ParentCgroupName = o.ParentCgroupName
 	}
+	if o.DefaultStagerImage != "" {
+		cfg.DefaultStagerImage = o.DefaultStagerImage
+	}
 
 	// append init pods
-	if len(o.InitPods) > 0 {
-		cfg.InitPods = append(cfg.InitPods, o.InitPods...)
-	}
-
-	// NTP
-	if o.Services.NTP.Enabled != nil {
-		cfg.Services.NTP.Enabled = o.Services.NTP.Enabled
-	}
-	if o.Services.NTP.ACI != "" {
-		cfg.Services.NTP.ACI = o.Services.NTP.ACI
-	}
-	if len(o.Services.NTP.Servers) > 0 {
-		cfg.Services.NTP.Servers = o.Services.NTP.Servers
-	}
-
-	// Udev
-	if o.Services.Udev.Enabled != nil {
-		cfg.Services.Udev.Enabled = o.Services.Udev.Enabled
-	}
-	if o.Services.Udev.ACI != "" {
-		cfg.Services.Udev.ACI = o.Services.Udev.ACI
+	if len(o.InitialPods) > 0 {
+		cfg.InitialPods = append(cfg.InitialPods, o.InitialPods...)
 	}
 
 	// Console
-	if o.Services.Console.Enabled != nil {
-		cfg.Services.Console.Enabled = o.Services.Console.Enabled
+	if o.Console.Enabled != nil {
+		cfg.Console.Enabled = o.Console.Enabled
 	}
-	if o.Services.Console.ACI != "" {
-		cfg.Services.Console.ACI = o.Services.Console.ACI
+	if o.Console.ACI != nil {
+		cfg.Console.ACI = o.Console.ACI
+		cfg.Console.PodManifest = nil
+	} else if o.Console.PodManifest != nil {
+		cfg.Console.PodManifest = o.Console.PodManifest
+		cfg.Console.ACI = nil
 	}
-	if o.Services.Console.Password != nil {
-		cfg.Services.Console.Password = o.Services.Console.Password
+	if o.Console.Password != nil {
+		cfg.Console.Password = o.Console.Password
 	}
-	if len(o.Services.Console.SSHKeys) > 0 {
-		cfg.Services.Console.SSHKeys = o.Services.Console.SSHKeys
+	if len(o.Console.SSHKeys) > 0 {
+		cfg.Console.SSHKeys = o.Console.SSHKeys
 	}
 
 	// pod networks
