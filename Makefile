@@ -15,17 +15,17 @@ user  := 1000
 group := 50
 endif
 
-BASE_DOCKER  := docker run --rm -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -e GOPATH=${GOPATH}
+DOCKER_FLAGS := --rm -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -e GOPATH=${GOPATH}
+DOCKER_USER  := --user=${user}\:${group}
 DOCKER_IMAGE := apcera/kurma-kernel
-DOCKER       := ${BASE_DOCKER} --user=${user}\:${group} ${DOCKER_IMAGE}
-DOCKER_PRIV  := ${BASE_DOCKER} --privileged ${DOCKER_IMAGE}
+DOCKER        = docker run ${DOCKER_FLAGS} ${DOCKER_USER} ${DOCKER_IMAGE}
 
 # Setup command for locally running Kurma on Linux, or running it within Docker
 # on OS X.
 RUN_CONFIG := build/local-kurmad.yml
-RUN_CMD := sudo env RUN_CONFIG=${RUN_CONFIG}
+RUN_CMD = sudo env RUN_CONFIG=${RUN_CONFIG}
 ifeq ($(UNAMES),Darwin)
-RUN_CMD := ${BASE_DOCKER} -v /tmp -e RUN_CONFIG=${RUN_CONFIG} --privileged -i -t ${DOCKER_IMAGE}
+RUN_CMD = docker run ${DOCKER_FLAGS} -v /tmp -e RUN_CONFIG=${RUN_CONFIG} --privileged -i -t ${DOCKER_IMAGE}
 endif
 
 # If STATIC=1 is set in the command line, then configure static compilation for
@@ -35,16 +35,15 @@ export CGO_LDFLAGS := -Wl,-Bstatic -lmount -lblkid -luuid -Wl,-Bdynamic
 endif
 
 # If the version flag is set, then ensure it will be passed down to Docker.
-ifdef $(VERSION)
-DOCKER += -e VERSION=${VERSION}
-DOCKER_PRIV += -e VERSION=${VERSION}
+ifdef VERSION
+DOCKER_FLAGS += -e VERSION=${VERSION}
+LDFLAGS += -X github.com/apcera/kurma/pkg/apiclient.version=${VERSION}
 endif
 
 # If we're already running within in Docker (such as on CI), then blank out the
 # Docker command line.
 ifeq ($(IN_DOCKER),1)
 DOCKER :=
-DOCKER_PRIV :=
 endif
 
 .DEFAULT_GOAL := local
@@ -80,11 +79,11 @@ run: ## Locally run kurmad
 #
 .PHONY: kurma-cli kurma-server kurma-init
 kurma-cli:    ## Locally build the kurma-cli binary
-	go build -o ${BASEPATH}/bin/$@ cmd/kurma-cli.go
+	go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurma-cli.go
 kurma-server: ## Build the kurma-server binary in Docker
-	$(DOCKER) go build -o ${BASEPATH}/bin/$@ cmd/kurma-server.go
+	$(DOCKER) go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurma-server.go
 kurma-init:
-	$(DOCKER) go build -o ${BASEPATH}/bin/$@ cmd/kurma-init.go
+	$(DOCKER) go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurma-init.go
 
 #
 # kurmaOS init image
@@ -155,16 +154,24 @@ bin/console.aci: kurma-cli
 #
 .PHONY: vm-rawdisk vm-virtualbox vm-vmware
 vm-rawdisk: ## Build the raw disk image for kurmaOS
-	$(DOCKER_PRIV) ./build/vms/raw_disk.sh
-vm-aws:  ## Build an AWS image
-	$(DOCKER_PRIV) ./build/vms/aws/oem.sh
-	$(BASE_DOCKER) apcera/docker-aws-tools ./build/vms/aws/import.sh
-vm-openstack: vm-rawdisk ## Build an OpenStack VM image
+vm-rawdisk: DOCKER_USER := --privileged
+vm-rawdisk:
+	$(DOCKER) ./build/vms/raw_disk.sh
+vm-aws: ## Build an AWS image
+vm-aws: DOCKER_USER := --privileged
+vm-aws:
+	$(DOCKER) ./build/vms/aws/oem.sh
+	docker run $(DOCKER_FLAGS) apcera/docker-aws-tools ./build/vms/aws/import.sh
+vm-openstack: ## Build an OpenStack VM image
+vm-openstack: vm-rawdisk
 	$(DOCKER) ./build/vms/openstack/build.sh
-vm-virtualbox: vm-rawdisk ## Build a Virtualbox VM image
+vm-virtualbox: ## Build a Virtualbox VM image
+vm-virtualbox: vm-rawdisk
 	$(DOCKER) ./build/vms/virtualbox/build.sh
-vm-vmware: vm-rawdisk ## Build a VMware VM image
-	$(DOCKER_PRIV) ./build/vms/vmware/build.sh
+vm-vmware: ## Build a VMware VM image
+vm-vmware: DOCKER_USER := --privileged
+vm-vmware: vm-rawdisk
+	$(DOCKER) ./build/vms/vmware/build.sh
 
 
 #
@@ -174,6 +181,24 @@ vm-vmware: vm-rawdisk ## Build a VMware VM image
 test: ## Locally run the unit tests
 	go test -i $(PKG)
 	go test -v $(PKG)
+
+
+#
+# Release
+#
+
+.PHONY: release-linux
+release-linux: ## Run release builds for Linux
+release-linux: kurma-cli kurma-server stager/container kurma-init
+release-linux: kurma-api bin/console.aci bin/kurma-init.tar.gz kurma-upgrader
+release-linux: vm-rawdisk vm-openstack vm-virtualbox vm-vmware
+.PHONY: clean-release
+release-to-resources:
+	@mkdir -p ./resources
+	@cp ./bin/console.aci ./bin/kurma-api.aci ./bin/kurma-cli \
+		./bin/kurmaos-openstack.zip ./bin/kurmaos-virtualbox.zip \
+		./bin/kurmaos-vmware.zip ./bin/kurma-server \
+		./bin/kurma-upgrader.aci ./bin/stager-container.aci ./resources/
 
 
 #

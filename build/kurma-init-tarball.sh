@@ -68,9 +68,9 @@ echo "DISTRIB_ID=KurmaOS" >> $dir/etc/lsb-release
 echo "DISTRIB_RELEASE=rolling" >> $dir/etc/lsb-release
 echo "DISTRIB_DESCRIPTION=KurmaOS" >> $dir/etc/lsb-release
 echo "NAME=KurmaOS" > $dir/etc/os-release
-echo "VERSION=$version" >> $dir/etc/os-release
+echo "VERSION=$VERSION" >> $dir/etc/os-release
 echo "ID=kurmaos" >> $dir/etc/os-release
-echo "PRETTY_NAME=KurmaOS v$version" >> $dir/etc/os-release
+echo "PRETTY_NAME=KurmaOS v$VERSION" >> $dir/etc/os-release
 
 # copy udev
 cp $(which udevd) $dir/bin/
