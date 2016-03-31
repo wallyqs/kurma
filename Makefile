@@ -67,7 +67,7 @@ download: ## Download common pre-built assets from Kurma's CI
 # Common Groupings
 #
 .PHONY: local
-local: kurma-cli kurma-server stager/container kurma-api ## Build the pieces typically needed for local development and testing.
+local: kurma-cli kurmad stager/container kurma-api ## Build the pieces typically needed for local development and testing.
 .PHONY: run
 run: ## Locally run kurmad
 	@echo 'Running kurmad'
@@ -77,11 +77,11 @@ run: ## Locally run kurmad
 #
 # Kurma Binaries
 #
-.PHONY: kurma-cli kurma-server kurma-init
+.PHONY: kurma-cli kurmad kurma-init
 kurma-cli:    ## Locally build the kurma-cli binary
 	go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurma-cli.go
-kurma-server: ## Build the kurma-server binary in Docker
-	$(DOCKER) go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurma-server.go
+kurmad: ## Build the kurmad binary in Docker
+	$(DOCKER) go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurmad.go
 kurma-init:
 	$(DOCKER) go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurma-init.go
 
@@ -189,7 +189,7 @@ test: ## Locally run the unit tests
 
 .PHONY: release-linux
 release-linux: ## Run release builds for Linux
-release-linux: kurma-cli kurma-server stager/container kurma-init
+release-linux: kurma-cli kurmad stager/container kurma-init
 release-linux: kurma-api bin/console.aci bin/kurma-init.tar.gz kurma-upgrader
 release-linux: vm-rawdisk vm-openstack vm-virtualbox vm-vmware
 .PHONY: clean-release
@@ -197,7 +197,7 @@ release-to-resources:
 	@mkdir -p ./resources
 	@cp ./bin/console.aci ./bin/kurma-api.aci ./bin/kurma-cli \
 		./bin/kurmaos-openstack.zip ./bin/kurmaos-virtualbox.zip \
-		./bin/kurmaos-vmware.zip ./bin/kurma-server \
+		./bin/kurmaos-vmware.zip ./bin/kurmad \
 		./bin/kurma-upgrader.aci ./bin/stager-container.aci ./resources/
 
 
