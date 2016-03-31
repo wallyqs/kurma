@@ -187,18 +187,35 @@ test: ## Locally run the unit tests
 # Release
 #
 
-.PHONY: release-linux
+.PHONY: release release-linux release-darwin
+ifeq ($(UNAMES),Linux)
+release: release-linux
+else ifeq ($(UNAMES),Darwin)
+release: release-darwin
+endif
 release-linux: ## Run release builds for Linux
 release-linux: kurma-cli kurmad stager/container kurma-init
 release-linux: kurma-api bin/console.aci bin/kurma-init.tar.gz kurma-upgrader
 release-linux: vm-rawdisk vm-openstack vm-virtualbox vm-vmware
-.PHONY: clean-release
-release-to-resources:
+.PHONY: release-darwin
+release-darwin: ## Run release builds for Darwin
+release-darwin: kurma-cli
+
+.PHONY: release-to-resources release-to-resources-linux release-to-resources-darwin
+ifeq ($(UNAMES),Linux)
+release-to-resources: release-to-resources-linux
+else ifeq ($(UNAMES),Darwin)
+release-to-resources: release-to-resources-darwin
+endif
+release-to-resources-linux:
 	@mkdir -p ./resources
 	@cp ./bin/console.aci ./bin/kurma-api.aci ./bin/kurma-cli \
 		./bin/kurmaos-openstack.zip ./bin/kurmaos-virtualbox.zip \
 		./bin/kurmaos-vmware.zip ./bin/kurmad \
 		./bin/kurma-upgrader.aci ./bin/stager-container.aci ./resources/
+release-to-resources-darwin:
+	@mkdir -p ./resources
+	@cp ./bin/kurma-cli ./resources/
 
 
 #
