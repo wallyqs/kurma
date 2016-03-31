@@ -15,6 +15,7 @@ class Kurma::ApiClient
   attr_reader :client
 
   def initialize
+    JSONRPC.logger = Kurma::LOG
     @client = JSONRPC::Client.new('http://example.com/rpc')
   end
 
