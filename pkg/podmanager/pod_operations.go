@@ -9,11 +9,14 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/appc/spec/schema"
 	"github.com/opencontainers/runc/libcontainer"
+
+	cnitypes "github.com/appc/cni/pkg/types"
 )
 
 var (
@@ -24,6 +27,7 @@ var (
 		(*Pod).startingBaseDirectories,
 		(*Pod).startingApplyIsolators,
 		(*Pod).startingNetwork,
+		(*Pod).startingResolvConf,
 		(*Pod).startingInitializeContainer,
 		(*Pod).startingWriteManifest,
 		(*Pod).launchStager,
@@ -172,14 +176,64 @@ func (pod *Pod) startingNetwork() error {
 
 	pod.log.Debug("Creating networking for stager")
 
-	netNsPath, _, err := pod.manager.networkManager.Provision(pod, pod.options.Networks)
+	netNsPath, networkResults, err := pod.manager.networkManager.Provision(pod, pod.options.Networks)
 	if err != nil {
 		return fmt.Errorf("failed to provision networking: %v", err)
 	}
 
 	pod.netNsPath = netNsPath
-	// FIXME c.pod.Networks = results
+	pod.networkResults = networkResults
+
 	pod.log.Debug("Finshed configuring networking")
+	return nil
+}
+
+// startingResolvConf handles writing the resolv.conf in the stager's filesystem
+// after networking has been set up.
+func (pod *Pod) startingResolvConf() error {
+	var dns *cnitypes.DNS
+
+	// Check to see if a DNS configuration was provided
+	for _, result := range pod.networkResults {
+		if result.DNS != nil {
+			dns = result.DNS
+			break
+		}
+	}
+
+	// If none was found, parse the system's resolv.conf
+	if dns == nil {
+		var err error
+		dns, err = dnsReadConfig("/etc/resolv.conf")
+		if err != nil {
+			return fmt.Errorf("failed to parse system resolv.conf: %v", err)
+		}
+	}
+
+	if err := mkdirs([]string{filepath.Join(pod.stagerRootPath(), "etc")}, os.FileMode(0755), true); err != nil {
+		return fmt.Errorf("failed to create /etc in stager: %v", err)
+	}
+
+	resolvConf := filepath.Join(pod.stagerRootPath(), "etc", "resolv.conf")
+	f, err := os.OpenFile(resolvConf, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(0644))
+	if err != nil {
+		return fmt.Errorf("failed to create /etc/resolv.conf for stager: %v", err)
+	}
+	defer f.Close()
+
+	if dns.Domain != "" {
+		fmt.Fprintf(f, "domain %s\n", dns.Domain)
+	}
+	if len(dns.Search) > 0 {
+		fmt.Fprintf(f, "search %s\n", strings.Join(dns.Search, " "))
+	}
+	for _, ns := range dns.Nameservers {
+		fmt.Fprintf(f, "nameserver %s\n", ns)
+	}
+	if len(dns.Options) > 0 {
+		fmt.Fprintf(f, "options %s\n", strings.Join(dns.Options, " "))
+	}
+
 	return nil
 }
 

@@ -69,6 +69,12 @@ var (
 			Device:      "cgroup",
 			Flags:       defaultMountFlags | syscall.MS_RDONLY,
 		},
+		{
+			Source:      "/etc/resolv.conf",
+			Destination: "/etc/resolv.conf",
+			Device:      "bind",
+			Flags:       syscall.MS_BIND | syscall.MS_RDONLY,
+		},
 	}
 )
 
