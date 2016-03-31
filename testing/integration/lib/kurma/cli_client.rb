@@ -14,11 +14,15 @@ class Kurma::CliClient
     Kurma::LOG
   end
 
+  def cli_binary
+    @cli_binary ||= File.join(File.dirname(__FILE__), "..", "..", "..", "..", "bin", "kurma-cli")
+  end
+
   # @param [String] cmd
   # @return [String, String, Process::Status]
   def run(cmd, *args)
     env = { }
-    cmd_line = "kurma-cli #{cmd}"
+    cmd_line = "#{self.cli_binary} #{cmd}"
     if cmd_line.include? " -- "
       # Command contains extended parameters, so put --show-panics before the extended parameters
       #cmd_line.sub! " -- ", " --show-panics -- "
@@ -46,7 +50,7 @@ class Kurma::CliClient
   # @return [Int] exit_status
   def run_with_prompts!(cmd, prompts = {})
     env = { }
-    cmd_line = "kurma-cli #{cmd}"
+    cmd_line = "#{self.cli_binary} #{cmd}"
     if cmd_line.include? " -- "
       # Command contains extended parameters, so put --show-panics before the extended parameters
       #cmd_line.sub! " -- ", " --show-panics -- "
@@ -107,7 +111,7 @@ class Kurma::CliClient
   # @param [String] cmd
   def start(cmd, *args)
     env = { }
-    cmd_line = "kurma-cli #{cmd}"
+    cmd_line = "#{self.cli_binary} #{cmd}"
     logger.info { "==> #{cmd_line}" }
 
     stdin_data = args.empty? ? nil : args.join("\n") + "\n"

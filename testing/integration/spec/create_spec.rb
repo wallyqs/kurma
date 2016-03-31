@@ -6,12 +6,13 @@ RSpec.describe "CLI create" do
     initial_pods_count = api.list_pods["pods"].size
 
     output = cli.run!("create coreos.com/etcd:v2.2.5")
-    expect(output).to include("Launched pod")
+    uuid = output.scan(/Launched pod ([\w-]+)/).flatten.first
+    expect(uuid).not_to be_nil
 
     resp = api.list_pods
     expect(resp["pods"].size).to eq(initial_pods_count+1)
 
-    output = cli.run!("stop #{resp["pods"].first["uuid"]}")
+    output = cli.run!("stop #{uuid}")
     expect(output).to include("Destroyed pod")
 
     resp = api.list_pods
@@ -22,12 +23,13 @@ RSpec.describe "CLI create" do
     initial_pods_count = api.list_pods["pods"].size
 
     output = cli.run!("create docker://nats")
-    expect(output).to include("Launched pod")
+    uuid = output.scan(/Launched pod ([\w-]+)/).flatten.first
+    expect(uuid).not_to be_nil
 
     resp = api.list_pods
     expect(resp["pods"].size).to eq(initial_pods_count+1)
 
-    output = cli.run!("stop #{resp["pods"].first["uuid"]}")
+    output = cli.run!("stop #{uuid}")
     expect(output).to include("Destroyed pod")
 
     resp = api.list_pods

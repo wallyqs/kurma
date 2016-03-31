@@ -10,7 +10,7 @@ class Kurma::Server
   end
 
   def kurma_binary
-    ENV["KURMAD_BINARY"] || "kurma-server"
+    ENV["KURMAD_BINARY"] || File.join(File.dirname(__FILE__), "..", "..", "..", "..", "bin", "kurma-server")
   end
 
   def kurma_logfile
