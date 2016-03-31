@@ -10,11 +10,11 @@ class Kurma::Server
   end
 
   def kurma_binary
-    ENV["KURMAD_BINARY"] || File.join(File.dirname(__FILE__), "..", "..", "..", "..", "bin", "kurma-server")
+    ENV["KURMAD_BINARY"] || File.join(File.dirname(__FILE__), "..", "..", "..", "..", "bin", "kurmad")
   end
 
   def kurma_logfile
-    ENV["KURMAD_LOGFILE"] || File.join(Dir.pwd, "log", "kurma-server.log")
+    ENV["KURMAD_LOGFILE"] || File.join(Dir.pwd, "log", "kurmad.log")
   end
 
   def write_configuration(tmppath, builddir)

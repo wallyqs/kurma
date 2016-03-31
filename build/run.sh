@@ -36,4 +36,4 @@ else
 fi
 
 cd $dir
-./source/bin/kurma-server -configFile ./source/$RUN_CONFIG
+./source/bin/kurmad -configFile ./source/$RUN_CONFIG
