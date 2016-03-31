@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/apcera/kurma/schema"
 	"github.com/opencontainers/runc/libcontainer"
@@ -31,6 +32,10 @@ func Run() error {
 		return err
 	}
 
+	// Allocate a wait group which is primarily used when a tty is requested, to
+	// ensure all content is written before returning.
+	wg := sync.WaitGroup{}
+
 	// Setup the process
 	workingDirectory := app.WorkingDirectory
 	if workingDirectory == "" {
@@ -54,7 +59,11 @@ func Run() error {
 		if err != nil {
 			return err
 		}
-		go io.Copy(os.Stdout, console)
+		wg.Add(1)
+		go func() {
+			io.Copy(os.Stdout, console)
+			wg.Done()
+		}()
 		go io.Copy(console, os.Stdin)
 	}
 
@@ -63,5 +72,9 @@ func Run() error {
 		return err
 	}
 	process.Wait()
+
+	// Wait for other routines to finish up and flush output
+	wg.Wait()
+
 	return nil
 }

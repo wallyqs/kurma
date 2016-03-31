@@ -35,4 +35,17 @@ RSpec.describe "CLI create" do
     resp = api.list_pods
     expect(resp["pods"].size).to eq(initial_pods_count)
   end
+
+  it "should enter a container and run a command" do
+    output = cli.run!("create docker://busybox --name busybox --net=host /bin/sleep 60")
+    uuid = output.scan(/Launched pod ([\w-]+)/).flatten.first
+    expect(uuid).not_to be_nil
+
+    output = cli.run!("enter #{uuid} busybox", "whoami", "exit")
+    output.gsub!("\r", "") # trim carriage returns
+    expect(output).to match("whoami\nroot")
+
+    output = cli.run!("stop #{uuid}")
+    expect(output).to include("Destroyed pod")
+  end
 end
