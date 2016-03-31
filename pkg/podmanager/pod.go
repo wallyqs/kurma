@@ -16,6 +16,7 @@ import (
 	"github.com/appc/spec/schema"
 	"github.com/opencontainers/runc/libcontainer"
 
+	ntypes "github.com/apcera/kurma/pkg/networkmanager/types"
 	kschema "github.com/apcera/kurma/schema"
 )
 
@@ -25,7 +26,8 @@ type Pod struct {
 	manager *Manager
 	log     *logray.Logger
 
-	netNsPath string
+	netNsPath      string
+	networkResults []*ntypes.IPResult
 
 	stagerPath      string
 	stagerImage     *schema.ImageManifest

@@ -38,11 +38,11 @@ func init() {
 	CreateCmd.Flags().StringSliceVarP(&createNetworks, "net", "", []string{}, "network to attach to the pod")
 }
 
-func createPodFromFile(args []string) (*apiclient.Image, error) {
+func createPodFromFile(file string) (*apiclient.Image, error) {
 	var f tempfile.ReadSeekCloser
 
 	// open the file
-	f, err := os.Open(args[0])
+	f, err := os.Open(file)
 	if err != nil {
 		if os.IsNotExist(err) {
 			info, err := cli.GetClient().Info()
@@ -54,7 +54,7 @@ func createPodFromFile(args []string) (*apiclient.Image, error) {
 			labels[types.ACIdentifier("os")] = "linux"
 			labels[types.ACIdentifier("arch")] = info.Arch
 
-			f, err = aciremote.RetrieveImage(args[0], labels, true)
+			f, err = aciremote.RetrieveImage(file, labels, true)
 			if err != nil {
 				fmt.Printf("Failed to retrieve the container image: %v\n", err)
 				os.Exit(1)
@@ -92,7 +92,7 @@ func cmdCreate(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 	} else {
-		image, err := createPodFromFile(args)
+		image, err := createPodFromFile(args[0])
 		if err != nil {
 			fmt.Printf("Failed to handle image: %v\n", err)
 			os.Exit(1)
@@ -114,12 +114,20 @@ func cmdCreate(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 
+		// create the app
+		app := image.Manifest.App
+		// override the exec command if more than 1 args are given
+		if len(args) > 1 {
+			app.Exec = args[1:]
+		}
+
 		// create the RuntimeApp
 		runtimeApp := schema.RuntimeApp{
 			Name: *types.MustACName(createName),
 			Image: schema.RuntimeImage{
 				ID: *imageID,
 			},
+			App: app,
 		}
 		manifest.Apps = append(manifest.Apps, runtimeApp)
 	}
