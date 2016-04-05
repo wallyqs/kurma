@@ -26,7 +26,7 @@ func init() {
 }
 
 func cmdEnter(cmd *cobra.Command, args []string) {
-	if len(args) == 0 {
+	if len(args) < 2 {
 		fmt.Printf("Invalid command options specified.\n")
 		cmd.Help()
 		return
@@ -39,12 +39,22 @@ func cmdEnter(cmd *cobra.Command, args []string) {
 		defer raw.TcSetAttr(os.Stdin.Fd(), termios)
 	}
 
-	app := &schema.RunApp{
-		WorkingDirectory: "/",
-		User:             "0",
-		Group:            "0",
-		Exec:             args[2:],
-		Tty:              true,
+	var app *schema.RunApp
+	if len(args) > 2 {
+		app = &schema.RunApp{
+			WorkingDirectory: "/",
+			User:             "0",
+			Group:            "0",
+			Exec:             args[2:],
+			Tty:              true,
+		}
+	} else {
+		app = &schema.RunApp{
+			WorkingDirectory: "/",
+			User:             "0",
+			Group:            "0",
+			Tty:              true,
+		}
 	}
 
 	// Initialize the reader/writer
