@@ -78,9 +78,10 @@ run: ## Locally run kurmad
 # Kurma Binaries
 #
 .PHONY: kurma-cli kurmad kurma-init
-kurma-cli:    ## Locally build the kurma-cli binary
+kurma-cli: LDFLAGS += -linkmode internal
+kurma-cli: ## Locally build the kurma-cli binary
 	go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurma-cli.go
-kurmad: ## Build the kurmad binary in Docker
+kurmad:    ## Build the kurmad binary in Docker
 	$(DOCKER) go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurmad.go
 kurma-init:
 	$(DOCKER) go build -ldflags '${LDFLAGS}' -o ${BASEPATH}/bin/$@ cmd/kurma-init.go
