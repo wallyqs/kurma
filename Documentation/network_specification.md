@@ -32,7 +32,7 @@ configuration.
   "pod_networks": [
     {
       "name": "mynet",
-      "aci": "apcera.com/kurma/cni-netplugin",
+      "aci": "kurma.io/cni-netplugin",
       "default": true,
       "containerInterface": "eth0",
       "type": "bridge",

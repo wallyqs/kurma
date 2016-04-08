@@ -1,5 +1,5 @@
 ---
-name: apcera.com/kurma/console
+name: kurma.io/console
 app:
   exec:
   - /start.sh
@@ -18,4 +18,4 @@ app:
   - name: os/linux/privileged
     value: true
 dependencies:
-  - imageName: apcera.com/kurma/busybox
+  - imageName: kurma.io/busybox

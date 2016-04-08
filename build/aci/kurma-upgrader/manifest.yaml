@@ -1,5 +1,5 @@
 ---
-name: apcera.com/kurma/upgrader
+name: kurma.io/upgrader
 app:
   exec:
   - /kurma-upgrader
