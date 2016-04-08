@@ -15,7 +15,9 @@ version=$(cd $cnidir/cni/.git && git describe --tags)
 
 # if we're running in TeamCity, then export the version information.
 if [ -n "$TC_BUILD_NUMBER" ]; then
+    set +x
     echo "##teamcity[buildNumber '$version']"
+    set -x
 fi
 
 dir=$(mktemp -d)
