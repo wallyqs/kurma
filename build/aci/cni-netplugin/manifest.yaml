@@ -1,5 +1,5 @@
 ---
-name: apcera.com/kurma/cni-netplugin
+name: kurma.io/cni-netplugin
 app:
   exec:
   - /opt/network/setup
@@ -14,4 +14,4 @@ app:
   - name: os/linux/privileged
     value: true
 dependencies:
-  - imageName: apcera.com/kurma/busybox
+  - imageName: kurma.io/busybox
