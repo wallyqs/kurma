@@ -1,5 +1,5 @@
 ---
-name: apcera.com/kurma/ntp
+name: kurma.io/ntp
 app:
   exec:
   - /start.sh
