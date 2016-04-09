@@ -24,7 +24,7 @@ initialPods:
   apps:
   - name: api-proxy
     image:
-      name: apcera.com/kurma/api
+      name: kurma.io/api
   isolators:
   - name: os/linux/namespaces
     value:

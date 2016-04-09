@@ -1,5 +1,5 @@
 ---
-name: apcera.com/kurma/stager/container
+name: kurma.io/stager/container
 app:
   exec:
   - /stager

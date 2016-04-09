@@ -1,5 +1,5 @@
 ---
-name: apcera.com/kurma/api
+name: kurma.io/api
 app:
   exec:
   - /kurma-api
