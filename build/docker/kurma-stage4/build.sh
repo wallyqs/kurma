@@ -24,6 +24,7 @@ echo 'sys-fs/eudev kmod' >> /etc/portage/package.use/eudev
 
 # update portage
 emerge-webrsync
+emerge --sync
 
 # install layman
 emerge app-portage/layman
@@ -35,19 +36,15 @@ echo 'source /var/lib/layman/make.conf' >> /etc/portage/make.conf
 echo 'kurmaos-base' >> /etc/portage/categories
 echo "=app-emulation/open-vm-tools-9.10.0" >> /etc/portage/package.unmask
 echo "=kurmaos-base/vboot_reference-2.1.0" >> /etc/portage/package.unmask
-echo "=dev-lang/go-1.6-r2" >> /etc/portage/package.unmask
 echo "=dev-libs/libdnet-1.12" >> /etc/portage/package.unmask
 echo "=dev-libs/libmspack-0.4_alpha" >> /etc/portage/package.unmask
 echo "=sys-boot/grub-2.02_beta2_p20150727-r1" >> /etc/portage/package.unmask
 echo "=sys-boot/syslinux-4.07-r1" >> /etc/portage/package.unmask
 
-echo "=dev-lang/go-1.6-r2" >> /etc/portage/package.accept_keywords
-echo "=dev-lang/go-bootstrap-1.4.3" >> /etc/portage/package.accept_keywords
-
 emerge \
     =kurmaos-base/vboot_reference-2.1.0 \
     =app-emulation/open-vm-tools-9.10.0 \
-    =dev-lang/go-1.6-r2 \
+    =dev-lang/go-1.6.1 \
     =sys-boot/grub-2.02_beta2_p20151217-r1 \
     =sys-boot/syslinux-4.07-r1
 
