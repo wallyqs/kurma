@@ -57,9 +57,10 @@ func (s *PodService) Destroy(r *http.Request, uuid *string, ret *apiclient.None)
 
 func exportPod(c backend.Pod) *apiclient.Pod {
 	return &apiclient.Pod{
-		UUID:  c.UUID(),
-		Name:  c.Name(),
-		Pod:   c.PodManifest(),
-		State: apiclient.State(c.State().String()),
+		UUID:     c.UUID(),
+		Name:     c.Name(),
+		Pod:      c.PodManifest(),
+		Networks: c.Networks(),
+		State:    apiclient.State(c.State().String()),
 	}
 }

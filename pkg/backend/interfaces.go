@@ -199,6 +199,9 @@ type Pod interface {
 	// PodManifest returns the current pod manifest for the App Pod Specification.
 	PodManifest() *schema.PodManifest
 
+	// Networks returns the configured network results for the pod.
+	Networks() []*ntypes.IPResult
+
 	// State returns the current operating state of the pod.
 	State() PodState
 
