@@ -60,7 +60,16 @@ type Pod struct {
 // PodManifest returns the current pod manifest for the App Pod
 // Specification.
 func (pod *Pod) PodManifest() *schema.PodManifest {
+	pod.mutex.Lock()
+	defer pod.mutex.Unlock()
 	return pod.manifest.Pod
+}
+
+// Networks returns the configured network results for the pod.
+func (pod *Pod) Networks() []*ntypes.IPResult {
+	pod.mutex.Lock()
+	defer pod.mutex.Unlock()
+	return pod.networkResults
 }
 
 // State returns the current operating state of the pod.

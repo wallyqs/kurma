@@ -6,14 +6,16 @@ import (
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
 
+	ntypes "github.com/apcera/kurma/pkg/networkmanager/types"
 	kschema "github.com/apcera/kurma/schema"
 )
 
 type Pod struct {
-	UUID  string              `json:"uuid"`
-	Name  string              `json:"name"`
-	Pod   *schema.PodManifest `json:"pod"`
-	State State               `json:"state"`
+	UUID     string              `json:"uuid"`
+	Name     string              `json:"name"`
+	Pod      *schema.PodManifest `json:"pod"`
+	Networks []*ntypes.IPResult  `json:"networks"`
+	State    State               `json:"state"`
 }
 
 type Image struct {
