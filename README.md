@@ -70,6 +70,40 @@ To connect with kurma-cli, please run:
 
 The latest release images can be [on our website](https://kurma.io/download).
 
+### Running Tests
+
+Kurma has both unit tests and integration tests. The unit tests are implemented
+in Go and can be ran using normal Go tooling.
+
+The easiest way to run full unit tests would be to run `make test`. This will
+run the tests within a Docker image so that it can test on Linux and in the
+proper build environment.
+
+The integration tests focus on testing Kurma from the outside in. They are
+implemented in Ruby using the well known [RSpec](http://rspec.info/)
+framework. The integration tests are focused on testing the daemon functionality
+via the API and CLI. It focuses on verifying the end-to-end functionality works
+as expected. Integration tests are ran on every pull request and master change,
+and test compatibility across each distribution that is officially supported.
+
+The integration tests live under `testing/integration` directory. They should
+generally work on any recent version of Ruby, Rubygems, and Bundler. Our own
+testing process involves using Ruby 2.2.4, Rubygems 2.6.1, and Bundler 1.11.2.
+
+To run the integration tests, can run the following:
+
+```shell
+$ cd testing/integration
+$ bundle install
+$ bundle exec rake spec
+```
+
+The integration tests handle launching the currently compiled Kurma binaries
+from the `bin` directory. It is necessary to run the tests from a Linux host, as
+it does actively launch the daemon rather than connect to an outside one.
+
+
+
 [License-URL]: https://opensource.org/licenses/Apache-2.0
 [License-Image]: https://img.shields.io/:license-apache-blue.svg
 [Build-Status-URL]: http://ci.kurma.io
