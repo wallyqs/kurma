@@ -78,7 +78,7 @@ type Container interface {
 	// Systemerror - System error.
 	Checkpoint(criuOpts *CriuOpts) error
 
-	// Restore restores the checkpointed container to a running state using the criu(8) utiity.
+	// Restore restores the checkpointed container to a running state using the criu(8) utility.
 	//
 	// errors:
 	// Systemerror - System error.
@@ -205,10 +205,11 @@ func (c *linuxContainer) Start(process *Process) error {
 		}
 		if c.config.Hooks != nil {
 			s := configs.HookState{
-				Version: c.config.Version,
-				ID:      c.id,
-				Pid:     parent.pid(),
-				Root:    c.config.Rootfs,
+				Version:    c.config.Version,
+				ID:         c.id,
+				Pid:        parent.pid(),
+				Root:       c.config.Rootfs,
+				BundlePath: utils.SearchLabels(c.config.Labels, "bundle"),
 			}
 			for _, hook := range c.config.Hooks.Poststart {
 				if err := hook.Run(s); err != nil {
@@ -405,16 +406,6 @@ func (c *linuxContainer) NotifyOOM() (<-chan struct{}, error) {
 
 func (c *linuxContainer) NotifyMemoryPressure(level PressureLevel) (<-chan struct{}, error) {
 	return notifyMemoryPressure(c.cgroupManager.GetPaths(), level)
-}
-
-// XXX debug support, remove when debugging done.
-func addArgsFromEnv(evar string, args *[]string) {
-	if e := os.Getenv(evar); e != "" {
-		for _, f := range strings.Fields(e) {
-			*args = append(*args, f)
-		}
-	}
-	fmt.Printf(">>> criu %v\n", *args)
 }
 
 // check Criu version greater than or equal to min_version
@@ -881,7 +872,7 @@ func (c *linuxContainer) criuSwrk(process *Process, req *criurpc.CriuReq, opts *
 			if err != nil {
 				return err
 			}
-			n, err = criuClient.Write(data)
+			_, err = criuClient.Write(data)
 			if err != nil {
 				return err
 			}

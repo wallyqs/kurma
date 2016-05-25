@@ -4,6 +4,7 @@ package logray
 
 import (
 	"fmt"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -30,7 +31,7 @@ type loggerOutputWrapper struct {
 	Class LogClass
 
 	// The Output the wrapper represents.
-	Output Output
+	OutputWrapper *outputWrapper
 }
 
 var (
@@ -145,6 +146,44 @@ func (logger *Logger) AddOutput(uri string, classes ...LogClass) error {
 	return nil
 }
 
+// UpdateOutput updates an existing output matching for an URI scheme
+// and exact classes match. For ex. if classes passed here are, DEBUG
+// and ERROR, it will update Outputs with Class equals to DEBUG|ERROR.
+func (logger *Logger) UpdateOutput(uri string, classes ...LogClass) error {
+
+	u, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+
+	class := NONE
+	for _, c := range classes {
+		class |= c
+	}
+
+	// Lock our outputs
+	logger.outputMutex.Lock()
+	defer logger.outputMutex.Unlock()
+	for i, o := range logger.outputs {
+		if class == o.Class && u.Scheme == o.OutputWrapper.URL.Scheme {
+			// Found a match
+
+			// generate it with new uri.
+			lo, err := createOutputWrapper(uri, classes)
+			if err != nil {
+				return err
+			}
+			if lo == nil {
+				continue
+			}
+
+			logger.outputs[i] = lo
+		}
+	}
+
+	return nil
+}
+
 // ResetOutput clears all the previously defined outputs on the Logger.
 func (logger *Logger) ResetOutput() {
 	logger.outputMutex.Lock()
@@ -176,7 +215,7 @@ func createOutputWrapper(uri string, classes []LogClass) (*loggerOutputWrapper, 
 	}
 
 	// generate the wrapper
-	lo := &loggerOutputWrapper{Class: class, Output: ow.Output}
+	lo := &loggerOutputWrapper{Class: class, OutputWrapper: ow}
 	return lo, nil
 }
 

@@ -17,7 +17,7 @@ import (
 
 	ntypes "github.com/apcera/kurma/pkg/networkmanager/types"
 	tt "github.com/apcera/util/testtool"
-	cnitypes "github.com/appc/cni/pkg/types"
+	cnitypes "github.com/containernetworking/cni/pkg/types"
 )
 
 func createPod(t *testing.T, manager *Manager) *Pod {

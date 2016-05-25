@@ -76,11 +76,11 @@ The rest of the JSON for configuration is passed along to the network plugin and
 can include any options specific to it.
 
 The format is generally aligned with the
-[Container Network Interface (CNI)](https://github.com/appc/cni) schema from the
+[Container Network Interface (CNI)](https://github.com/containernetworking/cni) schema from the
 AppContainer set of specificiations. Many of the default plugins available with
 Kurma are networking plugins wrapping the CNI binaries. For more on the
 configuration of the CNI plugins themselves, see the
-[CNI documentation](https://github.com/appc/cni/tree/master/Documentation).
+[CNI documentation](https://github.com/containernetworking/cni/tree/master/Documentation).
 
 ## The Container and The API
 

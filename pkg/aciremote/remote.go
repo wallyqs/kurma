@@ -40,7 +40,7 @@ func RetrieveImage(imageUri string, labels map[types.ACIdentifier]string, insecu
 
 	insecureOption := discovery.InsecureNone
 	if insecure {
-		insecureOption = discovery.InsecureHttp
+		insecureOption = discovery.InsecureHTTP
 	}
 
 	switch u.Scheme {
@@ -106,12 +106,12 @@ func RetrieveImage(imageUri string, labels map[types.ACIdentifier]string, insecu
 			app.Labels[k] = v
 		}
 
-		endpoints, _, err := discovery.DiscoverEndpoints(*app, nil, insecureOption)
+		endpoints, _, err := discovery.DiscoverACIEndpoints(*app, nil, insecureOption)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, ep := range endpoints.ACIEndpoints {
+		for _, ep := range endpoints {
 			r, err := RetrieveImage(ep.ACI, nil, insecure)
 			if err != nil {
 				continue

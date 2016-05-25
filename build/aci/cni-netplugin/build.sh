@@ -9,7 +9,7 @@ set -e -x
 # compile the cni binaries
 cnidir=$(mktemp -d)
 trap "rm -rf $cnidir" EXIT
-git clone https://github.com/appc/cni.git $cnidir/cni
+git clone https://github.com/containernetworking/cni.git $cnidir/cni
 version=$(cd $cnidir/cni/.git && git describe --tags)
 (cd $cnidir/cni && ./build)
 
