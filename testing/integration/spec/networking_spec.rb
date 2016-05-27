@@ -6,12 +6,10 @@ RSpec.describe "Container networking" do
     output = cli.run!("create docker://busybox --name busybox --net=host /bin/sleep 60")
     uuid = output.scan(/Launched pod ([\w-]+)/).flatten.first
     expect(uuid).not_to be_nil
+    @cleanup << "stop #{uuid}"
 
     output = cli.run!("enter #{uuid} busybox", "cat /etc/resolv.conf", "exit")
     output.gsub!("\r", "") # trim carriage returns
     expect(output).to match(/^nameserver \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
-
-    output = cli.run!("stop #{uuid}")
-    expect(output).to include("Destroyed pod")
   end
 end
