@@ -12,8 +12,8 @@ emerge --sync
 emerge sys-kernel/linux-firmware
 
 # allow the proper kernel version
-echo '=sys-kernel/vanilla-sources-4.4.7 ~amd64' >> /etc/portage/package.accept_keywords
-emerge =sys-kernel/vanilla-sources-4.4.7
+echo '=sys-kernel/vanilla-sources-4.4.11 ~amd64' >> /etc/portage/package.accept_keywords
+emerge =sys-kernel/vanilla-sources-4.4.11
 mv /tmp/kernel.defconfig /usr/src/linux/.config
 
 cd /usr/src/linux
