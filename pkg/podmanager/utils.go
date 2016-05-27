@@ -70,8 +70,9 @@ func (pod *Pod) generateContainerConfig() (*configs.Config, error) {
 				Flags:       defaultMountFlags | syscall.MS_RDONLY,
 			},
 			{
-				Destination: "/sys/fs/cgroup",
-				Device:      "cgroup",
+				Destination:      "/sys/fs/cgroup",
+				Device:           "cgroup",
+				PropagationFlags: []int{syscall.MS_PRIVATE},
 			},
 		},
 	}
