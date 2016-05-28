@@ -17,7 +17,7 @@ endif
 
 DOCKER_FLAGS := --rm -v ${BASEPATH}:${BASEPATH} -w ${BASEPATH} -e IN_DOCKER=1 -e TMPDIR=/tmp -e GOPATH=${GOPATH}
 DOCKER_USER  := --user=${user}\:${group}
-DOCKER_IMAGE := apcera/kurma-kernel:20160414-9acd18d8
+DOCKER_IMAGE := apcera/kurma-kernel:20160527-65c1ae19
 DOCKER        = docker run ${DOCKER_FLAGS} ${DOCKER_USER} ${DOCKER_IMAGE}
 
 # Setup command for locally running Kurma on Linux, or running it within Docker
