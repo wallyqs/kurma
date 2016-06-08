@@ -14,6 +14,7 @@ import (
 
 	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/kurma/pkg/graphstorage"
+	"github.com/apcera/kurma/pkg/graphstorage/aufs"
 	"github.com/apcera/kurma/pkg/graphstorage/overlay"
 	"github.com/apcera/kurma/stager/container/common"
 	"github.com/apcera/logray"
@@ -49,7 +50,6 @@ var (
 	defaultStagerConfig = &common.StagerConfig{
 		RequiredNamespaces: []string{"ipc", "pid", "uts"},
 		DefaultNamespaces:  []string{"ipc", "net", "pid", "uts"},
-		GraphStorage:       "overlay",
 	}
 
 	// These are the functions that will be called in order to handle stager startup.
@@ -214,8 +214,22 @@ func (cs *containerSetup) containerFilesystem() error {
 	var err error
 	var provisioner graphstorage.StorageProvisioner
 	switch cs.stagerConfig.GraphStorage {
+	case "aufs":
+		provisioner, err = aufs.New()
 	case "overlay":
 		provisioner, err = overlay.New()
+	case "":
+		// Detect which is available. We'll start with overlay and use it if creating
+		// the provisioner is successful. Otherwise, fall back to aufs.
+		provisioner, err = overlay.New()
+		if err == nil {
+			break
+		}
+		provisioner, err = aufs.New()
+		if err == nil {
+			break
+		}
+		return fmt.Errorf("failed to automatically detect a storage provider to use")
 	default:
 		return fmt.Errorf("unrecognized graph storage provider %q specified", cs.stagerConfig.GraphStorage)
 	}

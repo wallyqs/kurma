@@ -23,9 +23,24 @@ export DEBIAN_FRONTEND UCF_FORCE_CONFFNEW
 ucf --purge /boot/grub/menu.lst
 apt-get -o Dpkg::Options::="--force-confnew" --force-yes -fuy dist-upgrade
 
-# Install the specific needed linux-image-extra to get aufs
-extraPkg=$(dpkg -l | grep linux-image | grep -v linux-image-virtual | awk '{print $2}' | sed -e 's#linux-image#linux-image-extra#g')
-apt-get -y install $extraPkg
+# Install the 3.13 kernel image for Ubuntu precise. This is required for minimum
+# kernel version support.
+if [[ "$ubuntuCodename" == "precise" ]]; then
+  # Forcibly remove all existing kernel packages from the system.
+  dpkg -l | grep linux-image | awk '{print $2}' | xargs apt-get purge -y --force-yes
+
+  # Install the trusty backport kernel.
+  apt-get install -y linux-image-generic-lts-trusty
+else
+  # Install the specific needed linux-image-extra to get aufs
+  extraPkg=$(dpkg -l | grep linux-image | grep -v linux-image-virtual | grep -v lts | awk '{print $2}' | sed -e 's#linux-image#linux-image-extra#g')
+  apt-get -y install $extraPkg
+fi
 
 # Some needed apps/libraries
 apt-get -y install git libcap2 rsync
+
+# Install cgroup-lite on trusty and precise to handle cgroups mounts on startup.
+if [[ "$ubuntuCodename" == "precise" || "$ubuntuCodename" == "trusty" ]]; then
+  apt-get -y install cgroup-lite
+fi

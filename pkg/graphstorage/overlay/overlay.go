@@ -5,26 +5,21 @@ package overlay
 import "C"
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 
 	"github.com/apcera/kurma/pkg/graphstorage"
+	"github.com/apcera/kurma/pkg/misc"
 	"github.com/apcera/util/proc"
 )
 
 type overlayProvisioner struct {
-}
-
-type overlayDefinition struct {
-	LowerDirectories     []string
-	UpperDirectory       string
-	WorkDirectory        string
-	DestinationDirectory string
-	finishedDirectory    string
 }
 
 // New returns a new graph storage provisioner that uses the overlay filesystem
@@ -42,7 +37,6 @@ func New() (graphstorage.StorageProvisioner, error) {
 // location and with the included base containers in a new mount namespace. It
 // will return a PodStorage object on success, or an error on any failures.
 func (o *overlayProvisioner) Create(target string, imagedefintion []string) error {
-
 	upper, err := ioutil.TempDir(os.TempDir(), "upper")
 	if err != nil {
 		return err
@@ -74,6 +68,15 @@ func loadOverlaySupport() error {
 		return nil
 	}
 
+	// If the filesystem type isn't available, then check if the module is available
+	avail, err = checkIfOverlayModuleAvailable()
+	if err != nil {
+		return fmt.Errorf("failed to check if overlay module is available: %v", err)
+	}
+	if !avail {
+		return fmt.Errorf("overlay module is not available")
+	}
+
 	// It is not available yet, so load the module.
 	if b, err := exec.Command("modprobe", "overlay").CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to load the overlay module: %s - %v", string(b), err)
@@ -103,4 +106,32 @@ func checkIfOverlayIsAvailable() (bool, error) {
 		},
 	)
 	return available, err
+}
+
+// checkIfOverlayModuleAvailable checks if the overlay module is available in
+// the modules.alias file. This is more efficient than attempting to load the
+// module when it doesn't exist.
+func checkIfOverlayModuleAvailable() (bool, error) {
+	aliasPath := filepath.Join("/lib/modules", misc.GetKernelVersion(), "modules.alias")
+	f, err := os.Open(aliasPath)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		parts := strings.Fields(scanner.Text())
+		if len(parts) < 3 {
+			continue
+		}
+		if parts[0] != "alias" {
+			continue
+		}
+		if parts[len(parts)-1] != "overlay" {
+			continue
+		}
+		return true, nil
+	}
+	return false, nil
 }
