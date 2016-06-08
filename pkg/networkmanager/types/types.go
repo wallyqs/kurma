@@ -18,7 +18,7 @@ package types
 import (
 	"encoding/json"
 
-	"github.com/appc/cni/pkg/types"
+	"github.com/containernetworking/cni/pkg/types"
 )
 
 // NetConf describes a network.

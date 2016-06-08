@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/appc/cni/pkg/types"
+	"github.com/containernetworking/cni/pkg/types"
 )
 
 // See resolv.conf(5) on a Linux machine.

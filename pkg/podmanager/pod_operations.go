@@ -16,7 +16,7 @@ import (
 	"github.com/appc/spec/schema"
 	"github.com/opencontainers/runc/libcontainer"
 
-	cnitypes "github.com/appc/cni/pkg/types"
+	cnitypes "github.com/containernetworking/cni/pkg/types"
 )
 
 var (

@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/appc/cni/pkg/ns"
+	"github.com/containernetworking/cni/pkg/ns"
 
 	tt "github.com/apcera/util/testtool"
 )
