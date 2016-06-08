@@ -3,7 +3,7 @@ export BASEPATH
 
 # Set to 1 to use static linking.
 STATIC :=
-PKG    := ./...
+PKG    := $(shell go list ./... | grep -v /vendor/)
 
 # Determine the user ID and group ID to be used within docker. If using Docker
 # Toolbox such as on Darwin, it will map to 1000:50.
