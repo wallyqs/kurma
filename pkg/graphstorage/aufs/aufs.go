@@ -33,10 +33,10 @@ func New() (graphstorage.StorageProvisioner, error) {
 	return &aufsProvisioner{}, nil
 }
 
-// Create will trigger the creation of an aufs mount at the specified
-// location and with the included base containers in a new mount namespace. It
-// will return a PodStorage object on success, or an error on any failures.
-func (o *aufsProvisioner) Create(target string, imagedefintion []string) error {
+// Create will trigger the creation of an aufs mount at the specified location
+// and with the included base image paths. It will return an error on any
+// failures.
+func (o *aufsProvisioner) Create(target string, imagedefinition []string) error {
 	scratch, err := ioutil.TempDir(os.TempDir(), "scratch")
 	if err != nil {
 		return fmt.Errorf("failed to create aufs write branch: %v", err)
@@ -50,7 +50,7 @@ func (o *aufsProvisioner) Create(target string, imagedefintion []string) error {
 
 	// Mount each layer individually. Doing them as separate calls avoids issues
 	// with a single mount call with a lot of layers failing.
-	for _, imagePath := range imagedefintion {
+	for _, imagePath := range imagedefinition {
 		err := syscall.Mount("none", target, "aufs", syscall.MS_REMOUNT, fmt.Sprintf("append:%s=ro+wh", imagePath))
 		if err != nil {
 			return fmt.Errorf("failed to mount layer %q: %v", imagePath, err)

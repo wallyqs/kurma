@@ -34,9 +34,9 @@ func New() (graphstorage.StorageProvisioner, error) {
 }
 
 // Create will trigger the creation of an overlay mount at the specified
-// location and with the included base containers in a new mount namespace. It
-// will return a PodStorage object on success, or an error on any failures.
-func (o *overlayProvisioner) Create(target string, imagedefintion []string) error {
+// location and with the included base image paths. It will return an error on
+// any failures.
+func (o *overlayProvisioner) Create(target string, imagedefinition []string) error {
 	upper, err := ioutil.TempDir(os.TempDir(), "upper")
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (o *overlayProvisioner) Create(target string, imagedefintion []string) erro
 		return err
 	}
 
-	lower := strings.Join(imagedefintion, ":")
+	lower := strings.Join(imagedefinition, ":")
 	opts := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", lower, upper, work)
 	if err := syscall.Mount("overlay", target, "overlay", 0, opts); err != nil {
 		return fmt.Errorf("failed to mount storage: %v", err)
