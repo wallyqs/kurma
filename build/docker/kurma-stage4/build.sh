@@ -44,7 +44,7 @@ echo "=sys-boot/syslinux-4.07-r1" >> /etc/portage/package.unmask
 emerge \
     =kurmaos-base/vboot_reference-2.1.0 \
     =app-emulation/open-vm-tools-9.10.0 \
-    =dev-lang/go-1.6.1 \
+    =dev-lang/go-1.6.2 \
     =sys-boot/grub-2.02_beta2_p20151217-r1 \
     =sys-boot/syslinux-4.07-r1
 
