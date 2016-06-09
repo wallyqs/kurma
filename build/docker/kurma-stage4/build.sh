@@ -40,6 +40,7 @@ echo "=dev-libs/libdnet-1.12" >> /etc/portage/package.unmask
 echo "=dev-libs/libmspack-0.4_alpha" >> /etc/portage/package.unmask
 echo "=sys-boot/grub-2.02_beta2_p20150727-r1" >> /etc/portage/package.unmask
 echo "=sys-boot/syslinux-4.07-r1" >> /etc/portage/package.unmask
+echo "=dev-lang/go-1.6.2" >> /etc/portage/package.accept_keywords
 
 emerge \
     =kurmaos-base/vboot_reference-2.1.0 \
