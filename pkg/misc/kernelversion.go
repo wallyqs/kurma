@@ -1,16 +1,16 @@
 // Copyright 2016 Apcera Inc. All rights reserved.
 // getKernelVersion Copyright 2014 Google Inc. All Rights Reserved.
 
-package daemon
+package misc
 
 import (
 	"bytes"
 	"syscall"
 )
 
-// getKernelVersion parses the result from uname() into a string representation
+// GetKernelVersion parses the result from uname() into a string representation
 // of the kernel version.
-func getKernelVersion() string {
+func GetKernelVersion() string {
 	uname := &syscall.Utsname{}
 	if err := syscall.Uname(uname); err != nil {
 		return "Unknown"

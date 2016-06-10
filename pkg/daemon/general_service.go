@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/apcera/kurma/pkg/apiclient"
+	"github.com/apcera/kurma/pkg/misc"
 	"github.com/appc/spec/schema"
 )
 
@@ -22,7 +23,7 @@ func (s *Server) infoRequest(w http.ResponseWriter, req *http.Request) {
 		Arch:          runtime.GOARCH,
 		ACVersion:     schema.AppContainerVersion,
 		KurmaVersion:  apiclient.KurmaVersion,
-		KernelVersion: getKernelVersion(),
+		KernelVersion: misc.GetKernelVersion(),
 	}
 
 	hostname, err := os.Hostname()
