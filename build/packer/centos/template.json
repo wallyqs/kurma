@@ -12,6 +12,7 @@
         "scripts/01_packages.sh",
         "scripts/02_install_ruby.sh",
         "scripts/03_s3cmd.sh",
+        "scripts/04_ssh.sh",
         "scripts/99_cleanup.sh"
       ],
       "execute_command": "{{ .Vars }} sudo -E bash '{{.Path}}'"
