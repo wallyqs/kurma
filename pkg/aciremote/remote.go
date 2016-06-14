@@ -29,6 +29,11 @@ var (
 	}
 )
 
+func init() {
+	discovery.Client.Transport = &http.Transport{}
+	discovery.ClientInsecureTLS.Transport = &http.Transport{}
+}
+
 // RetrieveImage can be used to retrieve a remote image, and optionally discover
 // an image based on the App Container Image Discovery specification. Supports
 // handling local images as well as
