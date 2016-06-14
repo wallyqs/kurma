@@ -10,7 +10,7 @@ import (
 
 	"github.com/apcera/kurma/pkg/apiclient"
 	"github.com/apcera/kurma/pkg/cli"
-	"github.com/apcera/kurma/pkg/remote"
+	"github.com/apcera/kurma/pkg/fetch"
 	"github.com/apcera/util/tempfile"
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
@@ -54,7 +54,7 @@ func createPodFromFile(file string) (*apiclient.Image, error) {
 			labels[types.ACIdentifier("os")] = "linux"
 			labels[types.ACIdentifier("arch")] = info.Arch
 
-			f, err = remote.RetrieveImage(file, labels, true)
+			f, err = fetch.Fetch(file, labels, true)
 			if err != nil {
 				fmt.Printf("Failed to retrieve the container image: %v\n", err)
 				os.Exit(1)
