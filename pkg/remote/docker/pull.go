@@ -5,12 +5,11 @@ package docker
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 
 	"github.com/apcera/kurma/pkg/image"
-	"github.com/apcera/util/tempfile"
 
 	docker2aci "github.com/appc/docker2aci/lib"
 	docker2acicommon "github.com/appc/docker2aci/lib/common"
@@ -38,19 +37,19 @@ func New(insecure bool) image.Puller {
 		insecure:     insecure,
 		convertToACI: true,
 		squashLayers: true,
-	}, nil
+	}
 }
 
 // Pull fetches a remote Docker image.
-func (d *dockerPuller) Pull(dockerImageURI string) (tempfile.ReadSeekCloser, error) {
-	if d.convertToACI & d.squashLayers {
+func (d *dockerPuller) Pull(dockerImageURI string) (io.ReadCloser, error) {
+	if d.convertToACI && d.squashLayers {
 		return d.pullAsACI(dockerImageURI)
 	}
-	return errors.New("only ACI-squash-pull currently supported")
+	return nil, errors.New("only ACI-squash-pull currently supported")
 }
 
 // pullAsACI fetches a Docker image and converts it into an ACI.
-func (d *dockerPuller) pullAsACI(dockerImageURI string) (tempfile.ReadSeekCloser, error) {
+func (d *dockerPuller) pullAsACI(dockerImageURI string) (io.ReadCloser, error) {
 	if !d.convertToACI {
 		return nil, errors.New("not configured to convert to ACI")
 	}
@@ -76,7 +75,7 @@ func (d *dockerPuller) pullAsACI(dockerImageURI string) (tempfile.ReadSeekCloser
 	}
 
 	if d.squashLayers && len(acis) != 1 {
-		return fmt.Errorf("fetched %d layer(s), expected 1", len(acis))
+		return nil, fmt.Errorf("fetched %d layer(s), expected 1", len(acis))
 	}
 
 	f, err := os.Open(acis[0])

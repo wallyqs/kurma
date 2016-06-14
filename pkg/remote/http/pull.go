@@ -1,13 +1,13 @@
 // Copyright 2015-2016 Apcera Inc. All rights reserved.
 
-package docker
+package http
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/apcera/kurma/pkg/image"
-	"github.com/apcera/util/tempfile"
 )
 
 // A client represents a client for pulling remote images over HTTP.
@@ -19,16 +19,16 @@ type client struct {
 func New() image.Puller {
 	return &client{
 		Client: http.DefaultClient,
-	}, nil
+	}
 }
 
 // Pull fetches a remote Docker image from the configured registry.
-func (c *client) Pull(imageURI string) (tempfile.ReadSeekCloser, error) {
-	resp, err := c.client.Get(imageURI)
+func (c *client) Pull(imageURI string) (io.ReadCloser, error) {
+	resp, err := c.Client.Get(imageURI)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // TODO: needed?
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -36,5 +36,5 @@ func (c *client) Pull(imageURI string) (tempfile.ReadSeekCloser, error) {
 		return nil, fmt.Errorf("HTTP %d on retrieving %q", resp.StatusCode, imageURI)
 	}
 
-	return tempfile.New(resp.Body)
+	return resp.Body, nil
 }

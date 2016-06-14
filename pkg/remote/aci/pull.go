@@ -4,21 +4,12 @@ package aci
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"os"
-	"path/filepath"
-	"runtime"
+	"io"
 
-	"github.com/apcera/kurma/pkg/backend"
-	"github.com/apcera/util/tempfile"
+	"github.com/apcera/kurma/pkg/image"
+
 	"github.com/appc/spec/discovery"
-	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
-
-	docker2aci "github.com/appc/docker2aci/lib"
-	docker2acicommon "github.com/appc/docker2aci/lib/common"
 )
 
 // An aciPuller allows for discovering and downloading a new app container
@@ -37,27 +28,32 @@ func New(insecure bool, labels map[types.ACIdentifier]string) image.Puller {
 	return &aciPuller{
 		insecure: insecure,
 		labels:   labels,
-	}, nil
+	}
 }
 
 // Pull can be used to retrieve a remote image, and optionally discover
 // an image based on the App Container Image Discovery specification.
-func (a *aciPuller) Pull(aci string) (tempfile.ReadSeekCloser, error) {
+func (a *aciPuller) Pull(aci string) (io.ReadCloser, error) {
 	app, err := discovery.NewAppFromString(aci)
 	if err != nil {
 		return nil, err
 	}
 	for k, v := range a.labels {
-		app.labels[k] = v
+		app.Labels[k] = v
 	}
 
-	endpoints, _, err := discovery.DiscoverEndpoints(*app, nil, insecureOption)
+	insecureOption := discovery.InsecureNone
+	if a.insecure {
+		insecureOption = discovery.InsecureHTTP
+	}
+
+	endpoints, _, err := discovery.DiscoverACIEndpoints(*app, nil, insecureOption)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, ep := range endpoints.ACIEndpoints {
-		r, err := a.Pull(ep.ACI, nil, a.insecure)
+	for _, ep := range endpoints {
+		r, err := a.Pull(ep.ACI)
 		if err != nil {
 			continue
 		}
