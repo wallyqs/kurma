@@ -3,11 +3,11 @@
 package image
 
 import (
-	"github.com/apcera/util/tempfile"
+	"io"
 )
 
 // A Puller pulls container images.
 type Puller interface {
 	// Pull fetches an image.
-	Pull(uri string) (tempfile.ReadSeekCloser, error)
+	Pull(uri string) (io.ReadCloser, error)
 }
