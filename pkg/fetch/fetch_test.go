@@ -1,15 +1,14 @@
 // Copyright 2015-2016 Apcera Inc. All rights reserved.
 
-package remote
+package fetch
 
 import (
 	"io/ioutil"
 	"os"
-
 	"testing"
 )
 
-func TestRetrieveLocalFile(t *testing.T) {
+func TestFetch_LocalFile(t *testing.T) {
 	f, err := ioutil.TempFile(os.TempDir(), "localACi")
 	if err != nil {
 		t.Fatalf("Error creating temp file: %s", err)
@@ -18,17 +17,17 @@ func TestRetrieveLocalFile(t *testing.T) {
 
 	uri := "file://" + f.Name()
 
-	reader, err := RetrieveImage(uri, nil, false)
+	reader, err := Fetch(uri, nil, false)
 	if err != nil {
 		t.Fatalf("Expected no error retrieving %s; got %s", uri, err)
 	}
 	reader.Close()
 }
 
-func TestRetrieveUnsupportedScheme(t *testing.T) {
+func TestFetch_UnsupportedScheme(t *testing.T) {
 	uri := "fakescheme://google.com"
 
-	_, err := RetrieveImage(uri, nil, false)
+	_, err := Fetch(uri, nil, false)
 	if err == nil {
 		t.Fatalf("Expected error with URI %q, got none", uri)
 	}
