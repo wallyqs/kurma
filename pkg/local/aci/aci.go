@@ -23,11 +23,11 @@ import (
 	docker2acicommon "github.com/appc/docker2aci/lib/common"
 )
 
-// LoadImage is used to retrieve the specified imageURI and load it into the
+// Load is used to retrieve the specified imageURI and load it into the
 // Image Manager, returning the hash, manifest, or an error on failure. In the
 // case of AppC discovery format, it will check to see if the image already
 // exists before retrieving.
-func LoadImage(imageURI string, insecure bool, imageManager backend.ImageManager) (string, *schema.ImageManifest, error) {
+func Load(imageURI string, insecure bool, imageManager backend.ImageManager) (string, *schema.ImageManifest, error) {
 	u, err := url.Parse(imageURI)
 	if err != nil {
 		return "", nil, err

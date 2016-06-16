@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/apcera/kurma/pkg/local"
 	"github.com/apcera/kurma/pkg/remote/aci"
 	"github.com/apcera/kurma/pkg/remote/docker"
 	"github.com/apcera/kurma/pkg/remote/http"
@@ -25,6 +26,8 @@ func Fetch(imageURI string, labels map[types.ACIdentifier]string, insecure bool)
 
 	// TODO: re-introduce local retrieval.
 	switch u.Scheme {
+	case "file":
+
 	case "http", "https":
 		puller := http.New()
 

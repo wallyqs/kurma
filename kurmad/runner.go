@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/apcera/kurma/pkg/aciremote"
 	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/kurma/pkg/daemon"
 	"github.com/apcera/kurma/pkg/imagestore"
+	"github.com/apcera/kurma/pkg/local/aci"
 	"github.com/apcera/kurma/pkg/networkmanager"
 	"github.com/apcera/kurma/pkg/podmanager"
 	"github.com/apcera/logray"
@@ -125,7 +125,7 @@ func (r *runner) createDirectories() error {
 // them.
 func (r *runner) prefetchImages() error {
 	for _, aci := range r.config.PrefetchImages {
-		_, _, err := aciremote.LoadImage(aci, true, r.imageManager)
+		_, _, err := aci.Load(aci, true, r.imageManager)
 		if err != nil {
 			r.log.Warnf("Failed to fetch image %q: %v", aci, err)
 			continue
@@ -157,7 +157,7 @@ func (r *runner) createPodManager() error {
 	if r.config.DefaultStagerImage == "" {
 		return fmt.Errorf("a defaultStagerImage setting must be specified")
 	}
-	stagerHash, _, err := aciremote.LoadImage(r.config.DefaultStagerImage, true, r.imageManager)
+	stagerHash, _, err := aci.Load(r.config.DefaultStagerImage, true, r.imageManager)
 	if err != nil {
 		return fmt.Errorf("failed to fetch default stager image %q: %v", r.config.DefaultStagerImage, err)
 	}
@@ -194,7 +194,7 @@ func (r *runner) createNetworkManager() error {
 	networkDrivers := make([]*backend.NetworkDriver, 0, len(r.config.PodNetworks))
 
 	for _, podNet := range r.config.PodNetworks {
-		hash, _, err := aciremote.LoadImage(podNet.ACI, true, r.imageManager)
+		hash, _, err := aci.Load(podNet.ACI, true, r.imageManager)
 		if err != nil {
 			r.log.Warnf("Failed to load image for network %q: %v", podNet.Name, err)
 			continue

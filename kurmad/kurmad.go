@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/apcera/kurma/pkg/aciremote"
 	"github.com/apcera/kurma/pkg/backend"
+	"github.com/apcera/kurma/pkg/local/aci"
 	"github.com/apcera/kurma/pkg/networkmanager/types"
 	"github.com/apcera/logray"
 	"github.com/appc/spec/schema"
@@ -91,7 +91,7 @@ func (ip *InitialPodManifest) Process(imageManager backend.ImageManager) (string
 	hash, imageManifest := imageManager.FindImage(ip.image, "")
 	if imageManifest == nil {
 		var err error
-		hash, imageManifest, err = aciremote.LoadImage(ip.image, true, imageManager)
+		hash, imageManifest, err = aci.Load(ip.image, true, imageManager)
 		if err != nil {
 			return ip.name, nil, fmt.Errorf("failed to get a retrieve image %q: %v", ip.image, err)
 		}

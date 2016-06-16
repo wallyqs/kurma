@@ -12,6 +12,11 @@ import (
 	"github.com/appc/spec/schema/types"
 )
 
+func init() {
+	discovery.Client.Transport = &http.Transport{}
+	discovery.ClientInsecureTLS.Transport = &http.Transport{}
+}
+
 // An aciPuller allows for discovering and downloading a new app container
 // image.
 type aciPuller struct {
