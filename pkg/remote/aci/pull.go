@@ -5,6 +5,7 @@ package aci
 import (
 	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/apcera/kurma/pkg/image"
 
