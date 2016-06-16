@@ -3,24 +3,15 @@
 package aci
 
 import (
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"runtime"
 
 	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/kurma/pkg/remote/aci"
-	"github.com/apcera/util/tempfile"
 
 	"github.com/appc/spec/discovery"
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
-
-	docker2aci "github.com/appc/docker2aci/lib"
-	docker2acicommon "github.com/appc/docker2aci/lib/common"
 )
 
 // Load is used to retrieve the specified imageURI and load it into the
