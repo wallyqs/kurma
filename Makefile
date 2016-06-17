@@ -210,10 +210,11 @@ release-to-resources: release-to-resources-darwin
 endif
 release-to-resources-linux:
 	@mkdir -p ./resources
-	@cp ./bin/console.aci ./bin/kurma-api.aci ./bin/kurma-cli \
+	@tar czf test.tar.gz ./bin/console.aci ./bin/kurma-api.aci ./bin/kurma-cli \
 		./bin/kurmaos-openstack.zip ./bin/kurmaos-virtualbox.zip \
 		./bin/kurmaos-vmware.zip ./bin/kurmad \
-		./bin/kurma-upgrader.aci ./bin/stager-container.aci ./resources/
+		./bin/kurma-upgrader.aci ./bin/stager-container.aci
+	@cp test.tar.gz ./resources
 release-to-resources-darwin:
 	@mkdir -p ./resources
 	@cp ./bin/kurma-cli ./resources/
