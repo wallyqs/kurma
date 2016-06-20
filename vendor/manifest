@@ -29,7 +29,7 @@
 			"importpath": "github.com/apcera/util/hashutil",
 			"repository": "https://github.com/apcera/util",
 			"vcs": "git",
-			"revision": "0886c70ea1d38f650d5e2252eab7100eab90ed6d",
+			"revision": "b7475dbe9f4e3deb78127c27b150c0c94e37bddd",
 			"branch": "master",
 			"path": "/hashutil",
 			"notests": true
@@ -38,7 +38,7 @@
 			"importpath": "github.com/apcera/util/proc",
 			"repository": "https://github.com/apcera/util",
 			"vcs": "git",
-			"revision": "0886c70ea1d38f650d5e2252eab7100eab90ed6d",
+			"revision": "b7475dbe9f4e3deb78127c27b150c0c94e37bddd",
 			"branch": "master",
 			"path": "/proc",
 			"notests": true
@@ -47,7 +47,7 @@
 			"importpath": "github.com/apcera/util/spawn",
 			"repository": "https://github.com/apcera/util",
 			"vcs": "git",
-			"revision": "0886c70ea1d38f650d5e2252eab7100eab90ed6d",
+			"revision": "b7475dbe9f4e3deb78127c27b150c0c94e37bddd",
 			"branch": "master",
 			"path": "/spawn",
 			"notests": true
@@ -56,7 +56,7 @@
 			"importpath": "github.com/apcera/util/tarhelper",
 			"repository": "https://github.com/apcera/util",
 			"vcs": "git",
-			"revision": "0886c70ea1d38f650d5e2252eab7100eab90ed6d",
+			"revision": "b7475dbe9f4e3deb78127c27b150c0c94e37bddd",
 			"branch": "master",
 			"path": "/tarhelper",
 			"notests": true
@@ -65,7 +65,7 @@
 			"importpath": "github.com/apcera/util/tempfile",
 			"repository": "https://github.com/apcera/util",
 			"vcs": "git",
-			"revision": "0886c70ea1d38f650d5e2252eab7100eab90ed6d",
+			"revision": "b7475dbe9f4e3deb78127c27b150c0c94e37bddd",
 			"branch": "master",
 			"path": "/tempfile",
 			"notests": true
@@ -74,16 +74,16 @@
 			"importpath": "github.com/apcera/util/testtool",
 			"repository": "https://github.com/apcera/util",
 			"vcs": "git",
-			"revision": "0886c70ea1d38f650d5e2252eab7100eab90ed6d",
+			"revision": "b7475dbe9f4e3deb78127c27b150c0c94e37bddd",
 			"branch": "master",
-			"path": "/testtool",
+			"path": "testtool",
 			"notests": true
 		},
 		{
 			"importpath": "github.com/apcera/util/uuid",
 			"repository": "https://github.com/apcera/util",
 			"vcs": "git",
-			"revision": "0886c70ea1d38f650d5e2252eab7100eab90ed6d",
+			"revision": "b7475dbe9f4e3deb78127c27b150c0c94e37bddd",
 			"branch": "master",
 			"path": "/uuid",
 			"notests": true
@@ -92,8 +92,8 @@
 			"importpath": "github.com/apcera/util/wsconn",
 			"repository": "https://github.com/apcera/util",
 			"vcs": "git",
-			"revision": "0fac4a4de4d57cb1472f10ff4aa01bf97c2ee37e",
-			"branch": "gvt2",
+			"revision": "b7475dbe9f4e3deb78127c27b150c0c94e37bddd",
+			"branch": "master",
 			"path": "/wsconn",
 			"notests": true
 		},
@@ -119,7 +119,7 @@
 			"importpath": "github.com/appc/spec/aci",
 			"repository": "https://github.com/appc/spec",
 			"vcs": "git",
-			"revision": "05d50e649f47c4f4bfad9bbf9a95bbde1b26c783",
+			"revision": "f82c741e743001237821b5e0bb9a8ebd324d3117",
 			"branch": "HEAD",
 			"path": "/aci",
 			"notests": true
@@ -128,7 +128,7 @@
 			"importpath": "github.com/appc/spec/discovery",
 			"repository": "https://github.com/appc/spec",
 			"vcs": "git",
-			"revision": "05d50e649f47c4f4bfad9bbf9a95bbde1b26c783",
+			"revision": "f82c741e743001237821b5e0bb9a8ebd324d3117",
 			"branch": "HEAD",
 			"path": "/discovery",
 			"notests": true
@@ -137,7 +137,7 @@
 			"importpath": "github.com/appc/spec/pkg",
 			"repository": "https://github.com/appc/spec",
 			"vcs": "git",
-			"revision": "05d50e649f47c4f4bfad9bbf9a95bbde1b26c783",
+			"revision": "f82c741e743001237821b5e0bb9a8ebd324d3117",
 			"branch": "HEAD",
 			"path": "/pkg",
 			"notests": true
@@ -146,9 +146,81 @@
 			"importpath": "github.com/appc/spec/schema",
 			"repository": "https://github.com/appc/spec",
 			"vcs": "git",
-			"revision": "05d50e649f47c4f4bfad9bbf9a95bbde1b26c783",
-			"branch": "HEAD",
-			"path": "/schema",
+			"revision": "baa3e9cf6f5c3c28469b2c1bf7c09acdf87206a1",
+			"branch": "master",
+			"path": "schema",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/appc/spec/vendor/github.com/coreos/go-semver/semver",
+			"repository": "https://github.com/appc/spec",
+			"vcs": "git",
+			"revision": "baa3e9cf6f5c3c28469b2c1bf7c09acdf87206a1",
+			"branch": "master",
+			"path": "vendor/github.com/coreos/go-semver/semver",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/appc/spec/vendor/github.com/gogo/protobuf/proto",
+			"repository": "https://github.com/appc/spec",
+			"vcs": "git",
+			"revision": "baa3e9cf6f5c3c28469b2c1bf7c09acdf87206a1",
+			"branch": "master",
+			"path": "vendor/github.com/gogo/protobuf/proto",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/appc/spec/vendor/github.com/spf13/pflag",
+			"repository": "https://github.com/appc/spec",
+			"vcs": "git",
+			"revision": "baa3e9cf6f5c3c28469b2c1bf7c09acdf87206a1",
+			"branch": "master",
+			"path": "vendor/github.com/spf13/pflag",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/appc/spec/vendor/go4.org/errorutil",
+			"repository": "https://github.com/appc/spec",
+			"vcs": "git",
+			"revision": "baa3e9cf6f5c3c28469b2c1bf7c09acdf87206a1",
+			"branch": "master",
+			"path": "vendor/go4.org/errorutil",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/appc/spec/vendor/gopkg.in/inf.v0",
+			"repository": "https://github.com/appc/spec",
+			"vcs": "git",
+			"revision": "baa3e9cf6f5c3c28469b2c1bf7c09acdf87206a1",
+			"branch": "master",
+			"path": "vendor/gopkg.in/inf.v0",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/appc/spec/vendor/k8s.io/kubernetes/pkg/api/resource",
+			"repository": "https://github.com/appc/spec",
+			"vcs": "git",
+			"revision": "baa3e9cf6f5c3c28469b2c1bf7c09acdf87206a1",
+			"branch": "master",
+			"path": "vendor/k8s.io/kubernetes/pkg/api/resource",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/appc/spec/vendor/k8s.io/kubernetes/pkg/conversion",
+			"repository": "https://github.com/appc/spec",
+			"vcs": "git",
+			"revision": "baa3e9cf6f5c3c28469b2c1bf7c09acdf87206a1",
+			"branch": "master",
+			"path": "vendor/k8s.io/kubernetes/pkg/conversion",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/appc/spec/vendor/k8s.io/kubernetes/third_party/forked/reflect",
+			"repository": "https://github.com/appc/spec",
+			"vcs": "git",
+			"revision": "baa3e9cf6f5c3c28469b2c1bf7c09acdf87206a1",
+			"branch": "master",
+			"path": "vendor/k8s.io/kubernetes/third_party/forked/reflect",
 			"notests": true
 		},
 		{
