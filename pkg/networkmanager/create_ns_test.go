@@ -34,7 +34,7 @@ func TestCreateNetworkNamespace(t *testing.T) {
 
 	var nsnics []net.Interface
 
-	err = ns.WithNetNSPath(dest, true, func(*os.File) error {
+	err = ns.WithNetNSPath(dest, func(ns.NetNS) error {
 		var err error
 		nsnics, err = net.Interfaces()
 		return err
