@@ -40,12 +40,11 @@ podNetworks:
   containerInterface: "veth+{{shortuuid}}"
   type: bridge
   bridge: bridge0
-  isGateway: true
+  isDefaultGateway: true
   ipMasq: true
   ipam:
     type: host-local
     subnet: 10.220.0.0/16
-    routes: [ { dst: 0.0.0.0/0 } ]
       }
     end
     cfgfile

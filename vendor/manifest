@@ -235,7 +235,7 @@
 			"importpath": "github.com/containernetworking/cni/pkg/ns",
 			"repository": "https://github.com/containernetworking/cni",
 			"vcs": "git",
-			"revision": "19bb4a15bb74dcaa618602b7b7879c9ad6681188",
+			"revision": "5c3c17164270150467498a32c71436c7cd5501be",
 			"branch": "HEAD",
 			"path": "/pkg/ns",
 			"notests": true
@@ -244,9 +244,36 @@
 			"importpath": "github.com/containernetworking/cni/pkg/types",
 			"repository": "https://github.com/containernetworking/cni",
 			"vcs": "git",
-			"revision": "19bb4a15bb74dcaa618602b7b7879c9ad6681188",
+			"revision": "5c3c17164270150467498a32c71436c7cd5501be",
 			"branch": "HEAD",
 			"path": "/pkg/types",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/containernetworking/cni/vendor/github.com/onsi/ginkgo",
+			"repository": "https://github.com/containernetworking/cni",
+			"vcs": "git",
+			"revision": "b8e92ed030588120f9fda47dd359e17a3234142d",
+			"branch": "master",
+			"path": "vendor/github.com/onsi/ginkgo",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/containernetworking/cni/vendor/github.com/onsi/gomega",
+			"repository": "https://github.com/containernetworking/cni",
+			"vcs": "git",
+			"revision": "b8e92ed030588120f9fda47dd359e17a3234142d",
+			"branch": "master",
+			"path": "vendor/github.com/onsi/gomega",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/containernetworking/cni/vendor/golang.org/x/sys/unix",
+			"repository": "https://github.com/containernetworking/cni",
+			"vcs": "git",
+			"revision": "b8e92ed030588120f9fda47dd359e17a3234142d",
+			"branch": "master",
+			"path": "vendor/golang.org/x/sys/unix",
 			"notests": true
 		},
 		{
