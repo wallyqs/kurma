@@ -150,6 +150,7 @@ func (cs *containerSetup) getAppContainerConfig(runtimeApp schema.RuntimeApp) (*
 		ParentDeathSignal: int(syscall.SIGTERM),
 		Rootfs:            filepath.Join("/apps", name),
 		RootPropagation:   syscall.MS_PRIVATE,
+		Readonlyfs:        runtimeApp.ReadOnlyRootFS,
 		Namespaces: []configs.Namespace{
 			{Type: configs.NEWNS},
 			{Type: configs.NEWIPC, Path: fmt.Sprintf("/proc/%d/ns/ipc", initPid)},
