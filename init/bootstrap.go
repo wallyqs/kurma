@@ -22,6 +22,7 @@ import (
 	"github.com/apcera/kurma/pkg/capabilities"
 	"github.com/apcera/kurma/pkg/daemon"
 	"github.com/apcera/kurma/pkg/devices"
+	"github.com/apcera/kurma/pkg/fetch"
 	"github.com/apcera/kurma/pkg/imagestore"
 	"github.com/apcera/kurma/pkg/local/aci"
 	"github.com/apcera/kurma/pkg/networkmanager"
@@ -841,9 +842,11 @@ func (r *runner) setupDiscoveryProxy() error {
 // them.
 func (r *runner) prefetchImages() error {
 	for _, aci := range r.config.PrefetchImages {
-		_, _, err := aci.Load(aci, true, r.imageManager)
+		// TODO: is `r.imageManager` needed?
+		// TODO: configurable `insecure` option
+		_, _, err := fetch.FetchAndLoad(img, nil, true, r.imageManager)
 		if err != nil {
-			r.log.Warnf("Failed to fetch image %q: %v", aci, err)
+			r.log.Warnf("Failed to fetch image %q: %v", img, err)
 			continue
 		}
 		r.log.Debugf("Fetched image %s", aci)
