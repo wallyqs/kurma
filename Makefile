@@ -198,10 +198,11 @@ release-linux: ## Run release builds for Linux
 release-linux: kurma-cli kurmad stager/container kurma-init
 release-linux: kurma-api bin/console.aci bin/kurma-init.tar.gz kurma-upgrader
 release-linux: vm-rawdisk vm-openstack vm-virtualbox vm-vmware
-.PHONY: release-darwin
+
 release-darwin: ## Run release builds for Darwin
 release-darwin: kurma-cli
 
+TARFILE := kurma-release-linux.$(VERSION).tar.gz
 .PHONY: release-to-resources release-to-resources-linux release-to-resources-darwin
 ifeq ($(UNAMES),Linux)
 release-to-resources: release-to-resources-linux
@@ -210,14 +211,44 @@ release-to-resources: release-to-resources-darwin
 endif
 release-to-resources-linux:
 	@mkdir -p ./resources
-	@tar czf test.tar.gz ./bin/console.aci ./bin/kurma-api.aci ./bin/kurma-cli \
+	@tar czf $(TARFILE) ./bin/console.aci ./bin/kurma-api.aci ./bin/kurma-cli \
 		./bin/kurmaos-openstack.zip ./bin/kurmaos-virtualbox.zip \
-		./bin/kurmaos-vmware.zip ./bin/kurmad \
-		./bin/kurma-upgrader.aci ./bin/stager-container.aci
-	@cp test.tar.gz ./resources
+	 	./bin/kurmaos-vmware.zip ./bin/kurmad \
+	 	./bin/kurma-upgrader.aci ./bin/stager-container.aci
+	@cp $(TARFILE) ./resources
 release-to-resources-darwin:
 	@mkdir -p ./resources
 	@cp ./bin/kurma-cli ./resources/
+
+# definitely come back and add dependency checking like gem, fpm, VERSION, etc.
+.PHONY: debpkg debpkg-linux
+
+ifeq ($(UNAMES),Linux)
+debpkg: debpkg-linux
+else
+debpkg:
+endif
+
+PACKAGE_DIR := ./build/package
+
+debpkg-linux: kurma-cli kurmad stager/container kurma-init
+debpkg-linux: kurma-api bin/console.aci bin/kurma-init.tar.gz kurma-upgrader
+debpkg-linux:
+	@rm -rf $(PACKAGE_DIR)
+	@mkdir -p $(PACKAGE_DIR)/usr/bin $(PACKAGE_DIR)/lib/systemd/system \
+		$(PACKAGE_DIR)/usr/local/kurmad/images $(PACKAGE_DIR)/usr/local/kurmad/volumes \
+		$(PACKAGE_DIR)/usr/local/kurmad/pods $(PACKAGE_DIR)/usr/local/kurmad/assets
+	@cp ./bin/kurma-cli ./bin/kurmad $(PACKAGE_DIR)/usr/bin # move the binaries into /usr/bin
+	@cp ./bin/kurma-api.aci \
+		./bin/console.aci ./bin/kurma-upgrader.aci ./bin/stager-container.aci \
+		$(PACKAGE_DIR)/usr/local/kurmad/assets
+	@cd $(PACKAGE_DIR); fpm -s dir -t deb -n ./test.deb .
+
+
+
+
+
+
 
 
 #
