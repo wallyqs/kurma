@@ -124,13 +124,13 @@ func (r *runner) createDirectories() error {
 // prefetchImages is used to fetch specified images on start up to pre-load
 // them.
 func (r *runner) prefetchImages() error {
-	for _, aci := range r.config.PrefetchImages {
-		_, _, err := aci.Load(aci, true, r.imageManager)
+	for _, img := range r.config.PrefetchImages {
+		_, _, err := aci.Load(img, true, r.imageManager)
 		if err != nil {
-			r.log.Warnf("Failed to fetch image %q: %v", aci, err)
+			r.log.Warnf("Failed to fetch image %q: %v", img, err)
 			continue
 		}
-		r.log.Debugf("Fetched image %s", aci)
+		r.log.Debugf("Fetched image %q", img)
 	}
 	return nil
 }
