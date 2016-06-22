@@ -22,7 +22,7 @@ func New() image.Puller {
 	}
 }
 
-// Pull fetches a remote Docker image from the configured registry.
+// Pull fetches a remote image.
 func (c *client) Pull(imageURI string) (io.ReadCloser, error) {
 	resp, err := c.Client.Get(imageURI)
 	if err != nil {
