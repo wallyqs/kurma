@@ -54,7 +54,7 @@ func createPodFromFile(file string) (*apiclient.Image, error) {
 			labels[types.ACIdentifier("os")] = "linux"
 			labels[types.ACIdentifier("arch")] = info.Arch
 
-			f, err = fetch.FetchAndLoad(file, labels, true)
+			f, err = fetch.Fetch(file, labels, true)
 			if err != nil {
 				fmt.Printf("Failed to retrieve the container image: %v\n", err)
 				os.Exit(1)
