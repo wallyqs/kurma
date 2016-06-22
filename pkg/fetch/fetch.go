@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/kurma/pkg/local/file"
 	"github.com/apcera/kurma/pkg/remote/aci"
 	"github.com/apcera/kurma/pkg/remote/docker"
@@ -13,12 +14,30 @@ import (
 
 	"github.com/apcera/util/tempfile"
 
+	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
 )
 
-// Fetch loads a container image. Images may be sourced from the local machine,
-// or may be retrieved from a remote server.
-func Fetch(imageURI string, labels map[types.ACIdentifier]string, insecure bool) (tempfile.ReadSeekCloser, error) {
+// FetchAndLoad retrieves a container image and loads it for use within kurmad.
+// TODO: refactor out `labels`, `insecure` opts to a config struct. This can
+// live as a method on that struct.
+func FetchAndLoad(imageURI, labels map[types.ACIdentifier]string, insecure bool, imageManager backend.ImageManager)
+(string, *schema.ImageManifest, error) {
+	f, err := Fetch(imageURI, labels, insecure)
+	if err != nil {
+		return "", nil, err
+	}
+
+	hash, manifest, err := imageManager.CreateImage(f)
+	if err != nil {
+		return "", nil, err
+	}
+	return hash, manifest, nil
+}
+
+// fetch retrieves a container image. Images may be sourced from the local
+// machine, or may be retrieved from a remote server.
+func fetch(imageURI string, labels map[types.ACIdentifier]string, insecure bool) (tempfile.ReadSeekCloser, error) {
 	u, err := url.Parse(imageURI)
 	if err != nil {
 		return nil, err
@@ -60,3 +79,4 @@ func Fetch(imageURI string, labels map[types.ACIdentifier]string, insecure bool)
 		return nil, fmt.Errorf("%q scheme not supported", u.Scheme)
 	}
 }
+
