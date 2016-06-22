@@ -23,7 +23,7 @@ import (
 // live as a method on that struct.
 func FetchAndLoad(imageURI string, labels map[types.ACIdentifier]string, insecure bool, imageManager backend.ImageManager) (
 	string, *schema.ImageManifest, error) {
-	f, err := fetch(imageURI, labels, insecure)
+	f, err := Fetch(imageURI, labels, insecure)
 	if err != nil {
 		return "", nil, err
 	}
@@ -35,9 +35,9 @@ func FetchAndLoad(imageURI string, labels map[types.ACIdentifier]string, insecur
 	return hash, manifest, nil
 }
 
-// fetch retrieves a container image. Images may be sourced from the local
+// Fetch retrieves a container image. Images may be sourced from the local
 // machine, or may be retrieved from a remote server.
-func fetch(imageURI string, labels map[types.ACIdentifier]string, insecure bool) (tempfile.ReadSeekCloser, error) {
+func Fetch(imageURI string, labels map[types.ACIdentifier]string, insecure bool) (tempfile.ReadSeekCloser, error) {
 	u, err := url.Parse(imageURI)
 	if err != nil {
 		return nil, err
