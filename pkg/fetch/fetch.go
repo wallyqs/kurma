@@ -21,7 +21,7 @@ import (
 // FetchAndLoad retrieves a container image and loads it for use within kurmad.
 // TODO: refactor out `labels`, `insecure` opts to a config struct. This can
 // live as a method on that struct.
-func FetchAndLoad(imageURI, labels map[types.ACIdentifier]string, insecure bool, imageManager backend.ImageManager) (
+func FetchAndLoad(imageURI string, labels map[types.ACIdentifier]string, insecure bool, imageManager backend.ImageManager) (
 	string, *schema.ImageManifest, error) {
 	f, err := fetch(imageURI, labels, insecure)
 	if err != nil {
