@@ -23,7 +23,7 @@ import (
 // live as a method on that struct.
 func FetchAndLoad(imageURI, labels map[types.ACIdentifier]string, insecure bool, imageManager backend.ImageManager) (
 	string, *schema.ImageManifest, error) {
-	f, err := Fetch(imageURI, labels, insecure)
+	f, err := fetch(imageURI, labels, insecure)
 	if err != nil {
 		return "", nil, err
 	}
