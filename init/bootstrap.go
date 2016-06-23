@@ -24,7 +24,6 @@ import (
 	"github.com/apcera/kurma/pkg/devices"
 	"github.com/apcera/kurma/pkg/image"
 	"github.com/apcera/kurma/pkg/imagestore"
-	"github.com/apcera/kurma/pkg/local/aci"
 	"github.com/apcera/kurma/pkg/networkmanager"
 	"github.com/apcera/kurma/pkg/podmanager"
 	"github.com/apcera/logray"
@@ -597,7 +596,7 @@ func (r *runner) createPodManager() error {
 	if r.config.DefaultStagerImage == "" {
 		return fmt.Errorf("a defaultStagerImage setting must be specified")
 	}
-	stagerHash, _, err := aci.Load(r.config.DefaultStagerImage, true, r.imageManager)
+	stagerHash, _, err := image.FetchAndLoad(r.config.DefaultStagerImage, nil, true, r.imageManager)
 	if err != nil {
 		return fmt.Errorf("failed to fetch default stager image %q: %v", r.config.DefaultStagerImage, err)
 	}
@@ -636,7 +635,7 @@ func (r *runner) createNetworkManager() error {
 	networkDrivers := make([]*backend.NetworkDriver, 0, len(r.config.PodNetworks))
 
 	for _, podNet := range r.config.PodNetworks {
-		hash, _, err := aci.Load(podNet.ACI, true, r.imageManager)
+		hash, _, err := image.FetchAndLoad(podNet.ACI, nil, true, r.imageManager)
 		if err != nil {
 			r.log.Warnf("Failed to load image for network %q: %v", podNet.Name, err)
 			continue

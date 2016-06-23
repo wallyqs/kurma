@@ -7,7 +7,6 @@ import (
 	"net/url"
 
 	"github.com/apcera/kurma/pkg/backend"
-	"github.com/apcera/kurma/pkg/local/file"
 	"github.com/apcera/kurma/pkg/remote/aci"
 	"github.com/apcera/kurma/pkg/remote/docker"
 	"github.com/apcera/kurma/pkg/remote/http"
@@ -45,12 +44,16 @@ func Fetch(imageURI string, labels map[types.ACIdentifier]string, insecure bool)
 
 	switch u.Scheme {
 	case "file":
-		r, err := file.Load(imageURI)
+		filename := u.Path
+		if u.Host != "" {
+			filename = filepath.Join(u.Host, u.Path)
+		}
+		f, err := os.Open(filename)
 		if err != nil {
 			return nil, err
 		}
 
-		return tempfile.New(r)
+		return tempfile.New(f)
 	case "http", "https":
 		puller := http.New()
 
