@@ -63,9 +63,7 @@ func (s *ImageService) Exists(r *http.Request, hash *string, resp *apiclient.Boo
 		return fmt.Errorf("no image hash was specified")
 	}
 	image := s.server.options.ImageManager.GetImage(*hash)
-	if image == nil {
-		resp.Answer = false
-	} else {
+	if image != nil {
 		resp.Answer = true
 	}
 	return nil
