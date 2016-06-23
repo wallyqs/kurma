@@ -13,7 +13,7 @@ import (
 
 	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/kurma/pkg/daemon"
-	"github.com/apcera/kurma/pkg/fetch"
+	"github.com/apcera/kurma/pkg/image"
 	"github.com/apcera/kurma/pkg/imagestore"
 	"github.com/apcera/kurma/pkg/local/aci"
 	"github.com/apcera/kurma/pkg/networkmanager"
@@ -128,7 +128,7 @@ func (r *runner) prefetchImages() error {
 	for _, img := range r.config.PrefetchImages {
 		// TODO: is `r.imageManager` needed?
 		// TODO: configurable `insecure` option
-		_, _, err := fetch.FetchAndLoad(img, nil, true, r.imageManager)
+		_, _, err := image.FetchAndLoad(img, nil, true, r.imageManager)
 		if err != nil {
 			r.log.Warnf("Failed to fetch image %q: %v", img, err)
 			continue

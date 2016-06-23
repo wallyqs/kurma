@@ -1,6 +1,6 @@
 // Copyright 2015-2016 Apcera Inc. All rights reserved.
 
-package fetch
+package image
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ func FetchAndLoad(imageURI string, labels map[types.ACIdentifier]string, insecur
 		return "", nil, err
 	}
 
-	hash, manifest, err := imageManager.CreateImage(f)
+	hash, manifest, err := loadFromFile(f, imageManager)
 	if err != nil {
 		return "", nil, err
 	}
@@ -78,4 +78,13 @@ func Fetch(imageURI string, labels map[types.ACIdentifier]string, insecure bool)
 	default:
 		return nil, fmt.Errorf("%q scheme not supported", u.Scheme)
 	}
+}
+
+// loadFromFile loads a file as an image for use within Kurma.
+func loadFromFile(f tempfile.ReadSeekCloser, imageManager backend.ImageManager) (string, *schema.ImageManifest, error) {
+	hash, manifest, err := imageManager.CreateImage(f)
+	if err != nil {
+		return "", nil, err
+	}
+	return hash, manifest, nil
 }
