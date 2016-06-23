@@ -58,6 +58,19 @@ func (s *ImageService) Get(r *http.Request, hash *string, resp *apiclient.ImageR
 	return nil
 }
 
+func (s *ImageService) Exists(r *http.Request, hash *string, resp *apiclient.Bool) error {
+	if hash == nil {
+		return fmt.Errorf("no image hash was specified")
+	}
+	image := s.server.options.ImageManager.GetImage(*hash)
+	if image == nil {
+		resp.Answer = false
+	} else {
+		resp.Answer = true
+	}
+	return nil
+}
+
 func (s *ImageService) Delete(r *http.Request, hash *string, resp *apiclient.ImageResponse) error {
 	if hash == nil {
 		return fmt.Errorf("no image hash was specified")

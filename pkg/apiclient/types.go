@@ -55,6 +55,10 @@ type ImageResponse struct {
 
 type None struct{}
 
+type Bool struct {
+	Answer bool `json:"answer"`
+}
+
 type State string
 
 const (
