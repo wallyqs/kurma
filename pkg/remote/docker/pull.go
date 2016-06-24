@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/apcera/kurma/pkg/image"
+	"github.com/apcera/kurma/pkg/remote"
 
 	docker2aci "github.com/appc/docker2aci/lib"
 	docker2acicommon "github.com/appc/docker2aci/lib/common"
@@ -32,7 +32,7 @@ type dockerPuller struct {
 }
 
 // New creates a new dockerPuller to pull a remote Docker image.
-func New(insecure bool) image.Puller {
+func New(insecure bool) remote.Puller {
 	return &dockerPuller{
 		insecure:     insecure,
 		convertToACI: true,

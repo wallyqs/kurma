@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/apcera/kurma/pkg/image"
+	"github.com/apcera/kurma/pkg/remote"
 )
 
 // A client represents a client for pulling remote images over HTTP.
@@ -16,7 +16,7 @@ type client struct {
 }
 
 // New creates a new HTTP image pull client.
-func New() image.Puller {
+func New() remote.Puller {
 	return &client{
 		Client: http.DefaultClient,
 	}

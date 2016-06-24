@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/apcera/kurma/pkg/image"
+	"github.com/apcera/kurma/pkg/remote"
 
 	"github.com/appc/spec/discovery"
 	"github.com/appc/spec/schema/types"
@@ -30,7 +30,7 @@ type aciPuller struct {
 }
 
 // New creates a new aciPuller to fetch an App Container Image.
-func New(insecure bool, labels map[types.ACIdentifier]string) image.Puller {
+func New(insecure bool, labels map[types.ACIdentifier]string) remote.Puller {
 	return &aciPuller{
 		insecure: insecure,
 		labels:   labels,
