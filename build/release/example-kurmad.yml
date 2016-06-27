@@ -1,0 +1,31 @@
+---
+
+##
+## Example kurmad configuration
+##
+## Note the file paths included are all using the local directory. It assumes
+## this contains all of the files from the release tarball.
+
+socketPath: ./kurma.sock
+socketPermissions: 0666
+parentCgroupName: kurma
+podsDirectory: ./pods
+imagesDirectory: ./images
+volumesDirectory: ./volumes
+defaultStagerImage: file://stager-container.aci
+
+prefetchImages:
+- file://busybox.aci
+
+podNetworks:
+- name: bridge
+  aci: "file://cni-netplugin.aci"
+  default: true
+  containerInterface: "veth+{{shortuuid}}"
+  type: bridge
+  bridge: bridge0
+  isDefaultGateway: true
+  ipMasq: true
+  ipam:
+    type: host-local
+    subnet: 10.220.0.0/16
