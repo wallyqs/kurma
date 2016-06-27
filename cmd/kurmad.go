@@ -16,7 +16,7 @@ import (
 
 func main() {
 	var configFile string
-	flag.StringVar(&configFile, "configFile", "kurmad.yaml", "Path to the kurma configuration file")
+	flag.StringVar(&configFile, "configFile", "kurmad.yml", "Path to the kurma configuration file")
 	flag.Parse()
 
 	logray.AddDefaultOutput("stdout://", logray.ALL)

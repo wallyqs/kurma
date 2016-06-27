@@ -211,12 +211,26 @@ endif
 release-to-resources-linux:
 	@mkdir -p ./resources
 	@cp ./bin/console.aci ./bin/kurma-api.aci ./bin/kurma-cli \
-		./bin/kurmaos-openstack.zip ./bin/kurmaos-virtualbox.zip \
-		./bin/kurmaos-vmware.zip ./bin/kurmad \
-		./bin/kurma-upgrader.aci ./bin/stager-container.aci ./resources/
+		./bin/kurmad ./bin/stager-container.aci ./LICENSE ./resources/
+	@cp ./build/release/example-kurmad.yml ./resources/kurmad.yml
+	@cp ./bin/kurma-upgrader.aci ./resources/kurma-upgrader-$(VERSION).aci
+	@cp ./bin/kurmaos-openstack.zip ./resources/kurmaos-openstack-$(VERSION).zip
+	@cp ./bin/kurmaos-virtualbox.zip ./resources/kurmaos-virtualbox-$(VERSION).zip
+	@cp ./bin/kurmaos-vmware.zip ./resources/kurmaos-vmware-$(VERSION).zip
+	@tar -czf ./resources/kurma-cli-$(VERSION)-linux-amd64.tar.gz -C ./resources LICENSE kurma-cli
+	@tar -cf ./resources/kurmad-$(VERSION)-linux-amd64.tar -C ./resources LICENSE kurmad kurmad.yml \
+		console.aci stager-container.aci
+	@tar --append -f ./resources/kurmad-$(VERSION)-linux-amd64.tar -C ./bin busybox.aci cni-netplugin.aci
+	@gzip -f ./resources/kurmad-$(VERSION)-linux-amd64.tar
+	@zip -g -j ./resources/kurmaos-openstack-$(VERSION).zip ./resources/LICENSE
+	@zip -g -j ./resources/kurmaos-virtualbox-$(VERSION).zip ./resources/LICENSE
+	@zip -g -j ./resources/kurmaos-vmware-$(VERSION).zip ./resources/LICENSE
+	@rm ./resources/LICENSE ./resources/kurmad.yml
 release-to-resources-darwin:
 	@mkdir -p ./resources
-	@cp ./bin/kurma-cli ./resources/
+	@cp ./bin/kurma-cli ./LICENSE ./resources/
+	@tar -czf ./resources/kurma-cli-$(VERSION)-darwin-amd64.tar.gz -C ./resources LICENSE kurma-cli
+	@rm ./resources/LICENSE
 
 
 #
