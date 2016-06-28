@@ -26,6 +26,7 @@ import (
 	"github.com/apcera/kurma/pkg/imagestore"
 	"github.com/apcera/kurma/pkg/networkmanager"
 	"github.com/apcera/kurma/pkg/podmanager"
+	"github.com/apcera/kurma/pkg/remote/aci"
 	"github.com/apcera/logray"
 	"github.com/apcera/util/proc"
 	"github.com/apcera/util/tarhelper"
@@ -826,10 +827,10 @@ func (r *runner) setupDiscoveryProxy() error {
 	transport.Proxy = http.ProxyURL(uri)
 
 	// actual download requests
-	transport, ok = aciremote.Client.Transport.(*http.Transport)
+	transport, ok = aci.Client.Transport.(*http.Transport)
 	if !ok {
 		r.log.Warnf("Failed to configure remote download proxy, transport was not the expected type: %T",
-			aciremote.Client.Transport)
+			aci.Client.Transport)
 		return nil
 	}
 	transport.Proxy = http.ProxyURL(uri)
@@ -843,9 +844,9 @@ func (r *runner) prefetchImages() error {
 	for _, aci := range r.config.PrefetchImages {
 		// TODO: is `r.imageManager` needed?
 		// TODO: configurable `insecure` option
-		_, _, err := image.FetchAndLoad(img, nil, true, r.imageManager)
+		_, _, err := image.FetchAndLoad(aci, nil, true, r.imageManager)
 		if err != nil {
-			r.log.Warnf("Failed to fetch image %q: %v", img, err)
+			r.log.Warnf("Failed to fetch image %q: %v", aci, err)
 			continue
 		}
 		r.log.Debugf("Fetched image %s", aci)
