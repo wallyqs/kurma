@@ -92,6 +92,11 @@ func cmdCreate(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 	} else {
+		if len(args) == 0 {
+			cmd.Help()
+			os.Exit(1)
+		}
+
 		image, err := createPodFromFile(args[0])
 		if err != nil {
 			fmt.Printf("Failed to handle image: %v\n", err)
