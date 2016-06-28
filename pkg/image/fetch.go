@@ -5,6 +5,8 @@ package image
 import (
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 
 	"github.com/apcera/kurma/pkg/backend"
 	"github.com/apcera/kurma/pkg/remote/aci"
