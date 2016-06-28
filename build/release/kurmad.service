@@ -1,0 +1,10 @@
+[Unit]
+Description=Appc-compliant container runtime
+After=network.target
+
+[Service]
+TimeoutStartSec=0
+ExecStart=/usr/bin/kurmad -configFile /etc/kurmad/config.yml
+
+[Install]
+WantedBy=multi-user.target
