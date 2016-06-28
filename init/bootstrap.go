@@ -26,7 +26,6 @@ import (
 	"github.com/apcera/kurma/pkg/imagestore"
 	"github.com/apcera/kurma/pkg/networkmanager"
 	"github.com/apcera/kurma/pkg/podmanager"
-	"github.com/apcera/kurma/pkg/remote/aci"
 	"github.com/apcera/logray"
 	"github.com/apcera/util/proc"
 	"github.com/apcera/util/tarhelper"
@@ -35,6 +34,7 @@ import (
 	"github.com/appc/spec/schema/types"
 	"github.com/vishvananda/netlink"
 
+	remotehttp "github.com/apcera/kurma/pkg/remote/http"
 	kschema "github.com/apcera/kurma/schema"
 )
 
@@ -827,10 +827,10 @@ func (r *runner) setupDiscoveryProxy() error {
 	transport.Proxy = http.ProxyURL(uri)
 
 	// actual download requests
-	transport, ok = aci.Client.Transport.(*http.Transport)
+	transport, ok = remotehttp.Client.Transport.(*http.Transport)
 	if !ok {
 		r.log.Warnf("Failed to configure remote download proxy, transport was not the expected type: %T",
-			aci.Client.Transport)
+			remotehttp.Client.Transport)
 		return nil
 	}
 	transport.Proxy = http.ProxyURL(uri)
