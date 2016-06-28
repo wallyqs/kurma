@@ -14,6 +14,7 @@ modules:
   - br_netfilter
   - nf_conntrack_ipv4
   - xt_addrtype
+  - xt_comment
   - ipt_MASQUERADE
   - xt_conntrack
   - iptable_nat
@@ -50,12 +51,11 @@ podNetworks:
     containerInterface: "veth+{{shortuuid}}"
     type: bridge
     bridge: bridge0
-    isGateway: true
+    isDefaultGateway: true
     ipMasq: true
     ipam:
       type: host-local
-      subnet: 10.220.0.0/16
-      routes: [ { dst: 0.0.0.0/0 } ]
+      subnet: 10.230.0.0/16
 
 # Initial pods to launch on startup
 initialPods:
