@@ -1,4 +1,4 @@
-// Copyright 2015 Apcera Inc. All rights reserved.
+// Copyright 2015-2016 Apcera Inc. All rights reserved.
 
 package commands
 
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/apcera/kurma/pkg/apiclient"
 	"github.com/apcera/kurma/pkg/cli"
@@ -40,13 +41,20 @@ func cmdList(cmd *cobra.Command, args []string) {
 	// create the table
 	table := termtables.CreateTable()
 
-	table.AddHeaders("UUID", "Name", "Apps", "State")
+	table.AddHeaders("UUID", "Name", "Apps", "State", "IP(s)")
 	sort.Sort(sortedPods(pods))
 
 	for n, pod := range pods {
+		ips := make([]string, 0)
+		for _, net := range pod.Networks {
+			if net.IP4 != nil {
+				ips = append(ips, net.IP4.IP.IP.String())
+			}
+		}
+
 		for i, app := range pod.Pod.Apps {
 			if i == 0 {
-				table.AddRow(pod.UUID, pod.Name, app.Name.String(), pod.State)
+				table.AddRow(pod.UUID, pod.Name, app.Name.String(), pod.State, strings.Join(ips, " "))
 			} else {
 				table.AddRow("", "", app.Name.String(), "")
 			}
