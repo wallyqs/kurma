@@ -17,6 +17,8 @@ import (
 	"github.com/appc/spec/schema/types"
 	"github.com/opencontainers/runc/libcontainer"
 	"github.com/opencontainers/runc/libcontainer/configs"
+
+	cnitypes "github.com/containernetworking/cni/pkg/types"
 )
 
 const (
@@ -280,4 +282,21 @@ func applyIndividualIO(process *libcontainer.Process, f *os.File, name, which st
 	// offset for stdin/out/err, only 2 since it was already appended
 	fd := len(process.ExtraFiles) + 2
 	process.Env = append(process.Env, fmt.Sprintf(io_env_format, name, which, fd))
+}
+
+// isBlankDNS is used as a workaround for a CNI issue where some of the CNI
+// plugins will return "{}" as the DNS section on the results. This will cause
+// Go to instantiate a DNS option with all the default values. This iterates all
+// the fields and if they're all blank/empty, we'll return that it is blank so
+// the entry is skipped.
+func isBlankDNS(dns *cnitypes.DNS) bool {
+	if dns == nil {
+		return true
+	}
+
+	if dns.Domain == "" && len(dns.Nameservers) == 0 && len(dns.Options) == 0 && len(dns.Search) == 0 {
+		return true
+	}
+
+	return false
 }
