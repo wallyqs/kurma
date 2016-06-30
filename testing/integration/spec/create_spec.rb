@@ -42,4 +42,14 @@ RSpec.describe "CLI create" do
     output.gsub!("\r", "") # trim carriage returns
     expect(output).to match("whoami\nroot")
   end
+
+  it "should enter a container and return the status code on exit" do
+    output = cli.run!("create docker://busybox --name busybox --net=host /bin/sleep 60")
+    uuid = output.scan(/Launched pod ([\w-]+)/).flatten.first
+    expect(uuid).not_to be_nil
+    @cleanup << "stop #{uuid}"
+
+    _, _, status = cli.run("enter #{uuid} busybox", "exit 45")
+    expect(status.exitstatus).to be(45)
+  end
 end

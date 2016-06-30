@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"syscall"
 
 	"github.com/apcera/kurma/schema"
 	"github.com/opencontainers/runc/libcontainer"
@@ -71,10 +72,20 @@ func Run() error {
 	if err := container.Start(process); err != nil {
 		return err
 	}
-	process.Wait()
+
+	// Get the process status. Ignore the error, it'll always have an error if the
+	// process exited non-zero.
+	ps, _ := process.Wait()
 
 	// Wait for other routines to finish up and flush output
 	wg.Wait()
+
+	// We'll explicitly exit here so we can propagate up the exit code
+	if status, ok := ps.Sys().(syscall.WaitStatus); ok {
+		if code := status.ExitStatus(); code != 0 {
+			os.Exit(code)
+		}
+	}
 
 	return nil
 }
