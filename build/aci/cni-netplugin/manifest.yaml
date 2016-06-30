@@ -13,5 +13,7 @@ app:
   isolators:
   - name: os/linux/privileged
     value: true
+  - name: host/privileged
+    value: true
 dependencies:
   - imageName: kurma.io/busybox
