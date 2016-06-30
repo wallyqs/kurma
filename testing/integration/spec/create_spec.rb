@@ -2,7 +2,7 @@
 require 'spec_helper'
 
 RSpec.describe "CLI create" do
-  it "should launch an AppC conatiner" do
+  it "should launch an AppC container" do
     initial_pods_count = api.list_pods["pods"].size
 
     output = cli.run!("create coreos.com/etcd:v2.2.5")
@@ -20,7 +20,7 @@ RSpec.describe "CLI create" do
     expect(resp["pods"].size).to eq(initial_pods_count)
   end
 
-  it "should launch a Docker conatiner" do
+  it "should launch a Docker container" do
     initial_pods_count = api.list_pods["pods"].size
 
     output = cli.run!("create docker://nats")
