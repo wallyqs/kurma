@@ -138,6 +138,8 @@ func (d *networkDriver) call(exec string, args []string, val interface{}) error 
 		return werr
 	}
 
+	d.manager.log.Tracef("Called driver %s %s, exit %d: %q", d.config.Name, exec, exitCode, string(outBytes))
+
 	// if exit code wasn't 0, return stderr value as the error
 	if exitCode == 0 {
 		if val != nil {

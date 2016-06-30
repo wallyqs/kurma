@@ -195,7 +195,9 @@ func (pod *Pod) startingResolvConf() error {
 
 	// Check to see if a DNS configuration was provided
 	for _, result := range pod.networkResults {
-		if result.DNS != nil {
+		// FIXME: CNI always returns a "DNS" field with an empty value. We'll just
+		// iterate its fields and see if everything is empty.
+		if result.DNS != nil && !isBlankDNS(result.DNS) {
 			dns = result.DNS
 			break
 		}
