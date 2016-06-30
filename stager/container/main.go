@@ -23,7 +23,9 @@ func init() {
 		runtime.LockOSThread()
 		factory, _ := libcontainer.New("")
 		if err := factory.StartInitialization(); err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "%s\n\r", err)
+			os.Exit(1)
+			return
 		}
 		panic("--this line should have never been executed, congratulations--")
 	}
@@ -44,7 +46,7 @@ func main() {
 	}
 
 	if err := execFunc(); err != nil {
-		fmt.Fprintf(os.Stderr, "ERR: %v\n", err)
+		fmt.Fprintf(os.Stderr, "%s\n\r", err)
 		os.Exit(1)
 	}
 }

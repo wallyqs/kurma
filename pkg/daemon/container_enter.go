@@ -3,7 +3,9 @@
 package daemon
 
 import (
+	"encoding/json"
 	"net/http"
+	"syscall"
 
 	"github.com/apcera/kurma/pkg/apiclient"
 	"github.com/apcera/util/wsconn"
@@ -49,6 +51,28 @@ func (s *Server) containerEnterRequest(w http.ResponseWriter, req *http.Request)
 		http.Error(w, "Failed to enter container", 500)
 		return
 	}
-	process.Wait()
+	ps, err := process.Wait()
+
+	response := &apiclient.ContainerEnterResponse{}
+
+	if err != nil {
+		response.Code = 1
+		response.Message = err.Error()
+	} else {
+		response.Message = ps.String()
+		if status, ok := ps.Sys().(syscall.WaitStatus); ok {
+			response.Code = status.ExitStatus()
+		}
+	}
+
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		s.log.Errorf("Error marshalling enter response: %v", err)
+		return
+	}
+	if err := ws.WriteMessage(websocket.TextMessage, responseBytes); err != nil {
+		s.log.Warnf("Failing to write enter response: %v", err)
+	}
+
 	s.log.Debugf("Enter request finished")
 }

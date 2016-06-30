@@ -45,6 +45,11 @@ type ContainerEnterRequest struct {
 	App     kschema.RunApp `json:"app"`
 }
 
+type ContainerEnterResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 type ImageListResponse struct {
 	Images []*Image `json:"images"`
 }

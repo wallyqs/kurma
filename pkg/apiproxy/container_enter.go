@@ -44,6 +44,18 @@ func (s *Server) containerEnterRequest(w http.ResponseWriter, req *http.Request)
 	iwsc := wsconn.NewWebsocketConnection(iws)
 	defer iwsc.Close()
 
+	// Proxy any text control messages
+	if oowsc, ok := owsc.(*wsconn.WebsocketConnection); ok {
+		go func() {
+			for b := range oowsc.GetTextChannel() {
+				if len(b) == 0 {
+					return
+				}
+				iws.WriteMessage(websocket.TextMessage, b)
+			}
+		}()
+	}
+
 	go io.Copy(owsc, iwsc)
 	io.Copy(iwsc, owsc)
 	owsc.Close()
