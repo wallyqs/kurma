@@ -132,7 +132,10 @@ func (m *Manager) Setup(drivers []*backend.NetworkDriver) error {
 		return fmt.Errorf("network pod failed to be running, is in the %v state", state)
 	}
 	m.networkPod = networkPod
-	m.log.Tracef("Network pod provisioned and running: %s", m.networkPod.UUID())
+
+	mlog := m.log.Clone()
+	mlog.SetField("pod", m.networkPod.UUID())
+	mlog.Tracef("Network pod provisioned and running")
 
 	return nil
 }
@@ -144,13 +147,16 @@ func (m *Manager) Provision(pod backend.Pod, networks []string) (string, []*type
 	m.driversMutex.RLock()
 	defer m.driversMutex.RUnlock()
 
+	mlog := m.log.Clone()
+	mlog.SetField("pod", pod.UUID())
+
 	netNsPath := filepath.Join(m.netNsPath, pod.UUID())
 	if err := createNetworkNamespace(netNsPath); err != nil {
 		return "", nil, fmt.Errorf("failed to create network namespace: %v", err)
 	}
 
 	if m.networkPod == nil {
-		m.log.Tracef("Network provisioning skipped on %q, network pod is nil", pod.UUID())
+		mlog.Tracef("Network provisioning skipped, network pod is nil")
 		return "", nil, nil
 	}
 
@@ -168,7 +174,7 @@ func (m *Manager) Provision(pod backend.Pod, networks []string) (string, []*type
 
 		iface, err := driver.generateInterfaceName(pod, results)
 		if err != nil {
-			m.log.Warnf("Failed to generate interface name: %v", err)
+			mlog.Warnf("Failed to generate interface name: %v", err)
 			continue
 		}
 		driver.podInterfacesMutex.Lock()
@@ -178,16 +184,16 @@ func (m *Manager) Provision(pod backend.Pod, networks []string) (string, []*type
 		var result *types.IPResult
 		if err := m.processDriver(driver, pod, callAdd, &result); err != nil {
 			if err == callTimeout {
-				m.log.Warnf("Provision call on %q timed out", driver.config.Name)
+				mlog.Warnf("Provision call on %q timed out", driver.config.Name)
 			} else {
-				m.log.Error(err.Error())
+				mlog.Error(err.Error())
 			}
 			continue
 		}
 
 		result.Name = driver.config.Name
 		result.ContainerInterface = iface
-		m.log.Tracef("Provisioned networking. driver: %q, container: %q", result.Name, result.ContainerInterface)
+		mlog.Tracef("Provisioned networking. driver: %q, container: %q", result.Name, result.ContainerInterface)
 		results = append(results, result)
 	}
 

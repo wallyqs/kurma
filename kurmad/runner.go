@@ -262,7 +262,9 @@ func (r *runner) startInitialPods() error {
 			r.log.Errorf("Failed to launch pod %q: %v", name, err)
 			continue
 		}
-		r.log.Infof("Launched pod %q.", pod.Name())
+		l := r.log.Clone()
+		l.SetField("pod", pod.UUID())
+		l.Infof("Launched initial pod %q.", pod.Name())
 	}
 	return nil
 }

@@ -203,7 +203,7 @@ func (manager *Manager) Create(name string, manifest *schema.PodManifest, option
 	manager.podsLock.Unlock()
 
 	// begin the startup sequence
-	pod.log.Debugf("Launching pod %s", pod.uuid)
+	pod.log.Debugf("Launching pod %q", pod.name)
 	pod.start()
 
 	return pod, nil
