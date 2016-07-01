@@ -16,23 +16,6 @@ import (
 	atypes "github.com/appc/spec/schema/types"
 )
 
-var (
-	// The setup functions that should be run in order to handle setting up
-	// kurmad.
-	setupFunctions = []func(*runner) error{
-		(*runner).setupSignalHandling,
-		(*runner).loadConfigurationFile,
-		(*runner).configureLogging,
-		(*runner).createDirectories,
-		(*runner).createImageManager,
-		(*runner).prefetchImages,
-		(*runner).createPodManager,
-		(*runner).createNetworkManager,
-		(*runner).startDaemon,
-		(*runner).startInitialPods,
-	}
-)
-
 // Config is the configuration structure of kurmad.
 type Config struct {
 	Debug              bool                  `json:"debug,omitempty"`
@@ -155,36 +138,58 @@ func (ip *InitialPodManifest) unmarshalPodManifest(b []byte) error {
 	return json.Unmarshal(b, &ip.pod)
 }
 
-// runner is an object that is used to handle the startup of the full KurmaOS
-// system. It will take of the running of the process once init.Run() is
-// invoked.
-type runner struct {
-	config         *Config
-	configFile     string
-	log            *logray.Logger
-	podManager     backend.PodManager
-	imageManager   backend.ImageManager
-	networkManager backend.NetworkManager
-}
-
-// Run takes over the process and launches kurmad.
+// Run takes over the process and launches kurmad. It will return an error if any
+// part of the setup fails.
 func Run(configFile string) error {
 	r := &runner{
 		configFile: configFile,
 		log:        logray.New(),
 	}
-	return r.Run()
+	if err := bootstrap(r); err != nil {
+		r.log.Errorf("ERROR: %v", err)
+		return err
+	}
+
+	return nil
 }
 
-// Run handles executing the bootstrap setup. It will return an error if any
-// part of the setup fails.
-func (r *runner) Run() error {
-	for _, f := range setupFunctions {
-		if err := f(r); err != nil {
-			r.log.Errorf("ERROR: %v", err)
-			return fmt.Errorf("failed in startup function: %v", err)
-		}
+// bootstrap handles executing the bootstrap setup for kurmad.
+func bootstrap(r setupRunner) error {
+	r.setupSignalHandling()
+
+	err := r.loadConfigurationFile()
+	if err != nil {
+		return err
 	}
+
+	r.configureLogging()
+
+	err = r.createDirectories()
+	if err != nil {
+		return err
+	}
+
+	err = r.createImageManager()
+	if err != nil {
+		return err
+	}
+
+	r.prefetchImages()
+
+	err = r.createPodManager()
+	if err != nil {
+		return err
+	}
+
+	r.createNetworkManager()
+
+	err = r.startDaemon()
+	if err != nil {
+		return err
+	}
+
+	r.startInitialPods()
+
 	return nil
 }
 

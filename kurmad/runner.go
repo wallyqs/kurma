@@ -23,8 +23,33 @@ import (
 	"github.com/ghodss/yaml"
 )
 
+// setupRunner represents the behavior required to handle setting up kurmad.
+type setupRunner interface {
+	setupSignalHandling()
+	loadConfigurationFile() error
+	configureLogging()
+	createDirectories() error
+	createImageManager() error
+	prefetchImages()
+	createPodManager() error
+	createNetworkManager()
+	startDaemon() error
+	startInitialPods()
+}
+
+// runner is an object that is used to handle the startup of the system.
+// It will take of the running of the process once init.Run() is invoked.
+type runner struct {
+	config         *Config
+	configFile     string
+	log            *logray.Logger
+	podManager     backend.PodManager
+	imageManager   backend.ImageManager
+	networkManager backend.NetworkManager
+}
+
 // setupSignalHandling sets up the callbacks for signals to cleanly shutdown.
-func (r *runner) setupSignalHandling() error {
+func (r *runner) setupSignalHandling() {
 	signalc := make(chan os.Signal, 1)
 	signal.Notify(signalc, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
@@ -45,7 +70,8 @@ func (r *runner) setupSignalHandling() error {
 			}
 		}
 	}()
-	return nil
+
+	return
 }
 
 // loadConfigurationFile is used to parse the provided configuration file.
@@ -83,11 +109,11 @@ func (r *runner) loadConfigurationFile() error {
 
 // configureLogging is used to enable tracing logging, if it is turned on in the
 // configuration.
-func (r *runner) configureLogging() error {
+func (r *runner) configureLogging() {
 	if r.config.Debug {
 		logray.ResetDefaultLogLevel(logray.ALL)
 	}
-	return nil
+	return
 }
 
 // createDirectories ensures the specified storage paths for pods and volumes
@@ -123,7 +149,7 @@ func (r *runner) createDirectories() error {
 
 // prefetchImages is used to fetch specified images on start up to pre-load
 // them.
-func (r *runner) prefetchImages() error {
+func (r *runner) prefetchImages() {
 	for _, aci := range r.config.PrefetchImages {
 		_, _, err := aciremote.LoadImage(aci, true, r.imageManager)
 		if err != nil {
@@ -132,7 +158,7 @@ func (r *runner) prefetchImages() error {
 		}
 		r.log.Debugf("Fetched image %s", aci)
 	}
-	return nil
+	return
 }
 
 // createImageManager creates the image manager that is used to store and
@@ -181,11 +207,11 @@ func (r *runner) createPodManager() error {
 
 // createNetworkManager creates the network manager which launches the network
 // provisioner pods.
-func (r *runner) createNetworkManager() error {
+func (r *runner) createNetworkManager() {
 	networkManager, err := networkmanager.New(r.podManager)
 	if err != nil {
-		r.log.Errorf("Failed to create network manager: %v", err)
-		return nil
+		r.log.Errorf("Skipping networking because creation of network manager failed: %s", err)
+		return
 	}
 	networkManager.SetLog(r.log.Clone())
 	r.networkManager = networkManager
@@ -218,7 +244,7 @@ func (r *runner) createNetworkManager() error {
 	if err := r.networkManager.Setup(networkDrivers); err != nil {
 		r.log.Errorf("Failed to set up the networking pod: %v", err)
 	}
-	return nil
+	return
 }
 
 // startDaemon begins the main Kurma RPC server and will take over execution.
@@ -242,18 +268,19 @@ func (r *runner) startDaemon() error {
 		return err
 	}
 	r.log.Infof("kurmad now ready at path unix://%s", r.config.SocketPath)
+
 	return nil
 }
 
 // startInitialPods runs the initial pods from the configuration file.
-func (r *runner) startInitialPods() error {
+func (r *runner) startInitialPods() {
 	for d, ip := range r.config.InitialPods {
 		name, podManifest, err := ip.Process(r.imageManager)
 		if name == "" {
 			name = fmt.Sprintf("initial-pod-%d", d+1)
 		}
 		if err != nil {
-			r.log.Errorf("Failed to configure pod %q: %v", name, err)
+			r.log.Errorf("Failed to configure pod %q, skipping: %s", name, err)
 			continue
 		}
 
@@ -266,5 +293,5 @@ func (r *runner) startInitialPods() error {
 		l.SetField("pod", pod.UUID())
 		l.Infof("Launched initial pod %q.", pod.Name())
 	}
-	return nil
+	return
 }
