@@ -1,0 +1,36 @@
+socketPath: /var/run/kurma.sock
+socketPermissions: 0660
+parentCgroupName: kurma
+podsDirectory: /var/cache/kurmad/pods
+imagesDirectory: /var/cache/kurmad/images
+volumesDirectory: /var/cache/kurmad/volumes
+defaultStagerImage: file:///usr/share/kurmad/stager-container.aci
+
+prefetchImages:
+- file:///usr/share/kurmad/busybox.aci
+- file:///usr/share/kurmad/kurma-api.aci
+
+initialPods:
+- name: api-proxy
+  apps:
+  - name: api-proxy
+    image:
+      name: kurma.io/api
+  isolators:
+  - name: os/linux/namespaces
+    value:
+      net: host
+      uts: host
+
+podNetworks:
+- name: bridge
+  aci: "file:///usr/share/kurmad/cni-netplugin.aci"
+  default: true
+  containerInterface: "veth+{{shortuuid}}"
+  type: bridge
+  bridge: bridge0
+  isDefaultGateway: true
+  ipMasq: true
+  ipam:
+    type: host-local
+    subnet: 10.220.0.0/16

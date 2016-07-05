@@ -232,6 +232,28 @@ release-to-resources-darwin:
 	@tar -czf ./resources/kurma-cli-$(VERSION)-darwin-amd64.tar.gz -C ./resources LICENSE kurma-cli
 	@rm ./resources/LICENSE
 
+.PHONY: debpkg debpkg-linux
+
+ifeq ($(UNAMES),Linux)
+debpkg: debpkg-linux
+else
+debpkg:
+endif
+
+debpkg-linux:
+	./build/docker/deb/make-deb-package.sh
+
+
+.PHONY: rpmpkg rpmpkg-linux
+
+ifeq ($(UNAMES),Linux)
+rpmpkg: rpmpkg-linux
+else
+rpmpkg:
+endif
+
+rpmpkg-linux:
+	./build/docker/rpm/make-rpm-package.sh
 
 #
 # Help
