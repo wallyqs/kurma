@@ -7,6 +7,7 @@ import (
 	"flag"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -26,29 +27,35 @@ var (
 )
 
 func init() {
-	flag.StringVar(&manifestFile, "manifest", "", "Base manifest yaml file to use")
-	flag.StringVar(&rootDir, "root", "", "The root filesystem to load add to the image")
+	flag.StringVar(&manifestFile, "manifest", "", "Base manifest yaml file to use (required)")
+	flag.StringVar(&rootDir, "root", "", "The root filesystem to load to the image (required)")
 	flag.StringVar(&version, "version", "", "The version label to add to the manifest")
-	flag.StringVar(&outputFile, "output", "", "The target file to write to")
+	flag.StringVar(&outputFile, "output", "", "The target file to write to (required)")
 }
 
 func main() {
+	log.SetFlags(0)
 	flag.Parse()
+
+	if manifestFile == "" || rootDir == "" || outputFile == "" {
+		flag.Usage()
+		os.Exit(2)
+	}
 
 	f, err := os.Open(manifestFile)
 	if err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 
 	byt, err := ioutil.ReadAll(f)
 	if err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 	f.Close()
 
 	image := schema.BlankImageManifest()
 	if err := yaml.Unmarshal(byt, &image); err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 
 	// Add the current os/arch labels, and version if it is set
@@ -64,33 +71,33 @@ func main() {
 	// Create a tempdir to map everything in to
 	tmpdir, err := ioutil.TempDir(os.TempDir(), "build-aci")
 	if err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 	defer os.RemoveAll(tmpdir)
 
 	if err := os.Chmod(tmpdir, os.FileMode(0755)); err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 	if err := os.Mkdir(filepath.Join(tmpdir, "rootfs"), os.FileMode(0755)); err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 
 	f, err = os.Create(filepath.Join(tmpdir, "manifest"))
 	if err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 	if err := json.NewEncoder(f).Encode(image); err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 	f.Close()
 
 	if err := copypath(rootDir, filepath.Join(tmpdir, "rootfs")); err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 
 	f, err = os.OpenFile(outputFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(0644))
 	if err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 	defer f.Close()
 
@@ -101,7 +108,7 @@ func main() {
 	tar.OwnerMappingFunc = func(_ int) (int, error) { return 0, nil }
 	tar.GroupMappingFunc = func(_ int) (int, error) { return 0, nil }
 	if err := tar.Archive(); err != nil {
-		panic(err)
+		log.Fatalf("%s: %s", os.Args[0], err)
 	}
 }
 
