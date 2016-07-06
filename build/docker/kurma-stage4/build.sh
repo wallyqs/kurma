@@ -72,7 +72,7 @@ emerge sys-apps/util-linux
 curl -L https://github.com/appc/acbuild/releases/download/v0.2.2/acbuild.tar.gz | tar xzv -C /usr/bin
 
 # install docker client, necessary for building deb and rpm packages.
-wget "https://get.docker.com/builds/Linux/x86_64/docker-1.10.2" -O /usr/bin/docker
+curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.10.2" -o /usr/bin/docker
 chmod +x /usr/bin/docker
 
 # cleanup
