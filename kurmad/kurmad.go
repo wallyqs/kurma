@@ -18,20 +18,52 @@ import (
 
 // Config is the configuration structure of kurmad.
 type Config struct {
-	Debug              bool                  `json:"debug,omitempty"`
-	SocketPath         string                `json:"socketPath,omitempty"`
-	SocketPermissions  *int                  `json:"socketPermissions,omitempty"`
-	ParentCgroupName   string                `json:"parentCgroupName,omitempty"`
-	PodsDirectory      string                `json:"podsDirectory,omitempty"`
-	ImagesDirectory    string                `json:"imagesDirectory,omitempty"`
-	VolumesDirectory   string                `json:"volumesDirectory,omitempty"`
-	DefaultStagerImage string                `json:"defaultStagerImage,omitempty"`
-	PrefetchImages     []string              `json:"prefetchImages,omitempty"`
-	InitialPods        []*InitialPodManifest `json:"initialPods,omitempty"`
-	PodNetworks        []*types.NetConf      `json:"podNetworks"`
+	// Debug is a flag which activates debug tracing
+	// done by the daemon.
+	Debug bool `json:"debug,omitempty"`
+
+	// SocketPath is the location of the socket to which
+	// we can connect to make requests to the Kurma API.
+	SocketPath string `json:"socketPath,omitempty"`
+
+	// SocketPermissions are the file permissions to be set
+	// on the Unix socket created by the daemon.
+	SocketPermissions *int `json:"socketPermissions,omitempty"`
+
+	// ParentCgroupName is the name of the cgroup to be used
+	// by the pod manager when generating the config from a container.
+	ParentCgroupName string `json:"parentCgroupName,omitempty"`
+
+	// PodsDirectory is the directory which the pod manager
+	// will use for the pods.
+	PodsDirectory string `json:"podsDirectory,omitempty"`
+
+	// ImagesDirectory is the directory which will be used
+	// by the image manager.
+	ImagesDirectory string `json:"imagesDirectory,omitempty"`
+
+	// VolumesDirectory is the directory which the pod manager
+	// will use for the volume mounts.
+	VolumesDirectory string `json:"volumesDirectory,omitempty"`
+
+	// DefaultStagerImage is the uri of the default ACI image
+	// to be used for stager run when launching pods.
+	DefaultStagerImage string `json:"defaultStagerImage,omitempty"`
+
+	// PrefetchImages is the collection of image uris which
+	// will be preloaded onto the image manager when kurmad boots.
+	PrefetchImages []string `json:"prefetchImages,omitempty"`
+
+	// InitialPods is the collection of manifests from pods which will
+	// be launched when kurmad boots.
+	InitialPods []*InitialPodManifest `json:"initialPods,omitempty"`
+
+	// PodNetworks is the collection of networks which will be provisioned
+	// by the network manager for pods.
+	PodNetworks []*types.NetConf `json:"podNetworks"`
 }
 
-// InitialPodManifest is used to handle the inital pod configuration section,
+// InitialPodManifest is used to handle the initial pod configuration section,
 // where either an image specification string can be given, or a partial pod
 // manifest.
 type InitialPodManifest struct {
