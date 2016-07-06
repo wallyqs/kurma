@@ -41,8 +41,8 @@ func main() {
 	case "run":
 		execFunc = run.Run
 	default:
-		fmt.Fprintf(os.Stderr, "Unrecognized command %q", execName)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Unrecognized command %q\n", execName)
+		os.Exit(2)
 	}
 
 	if err := execFunc(); err != nil {
