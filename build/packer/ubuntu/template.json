@@ -28,6 +28,7 @@
       "security_group_id": "sg-9a26a6fd",
       "instance_type": "m3.medium",
       "associate_public_ip_address": true,
+      "delete_on_termination": true,
       "ssh_private_ip": true,
       "ssh_username": "ubuntu",
       "ami_groups": [ "all" ],
