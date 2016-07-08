@@ -30,6 +30,7 @@ type Options struct {
 	RequiredNamespaces    []string
 	Log                   *logray.Logger
 	FactoryFunc           func(root string) (libcontainer.Factory, error)
+	Debug                 bool
 }
 
 func defaultFactory(root string) (libcontainer.Factory, error) {

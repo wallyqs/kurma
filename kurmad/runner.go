@@ -195,6 +195,7 @@ func (r *runner) createPodManager() error {
 		ParentCgroupName:      r.config.ParentCgroupName,
 		DefaultStagerHash:     stagerHash,
 		Log:                   r.log.Clone(),
+		Debug:                 r.config.Debug,
 	}
 	m, err := podmanager.NewManager(r.imageManager, nil, mopts)
 	if err != nil {
