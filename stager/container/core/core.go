@@ -3,14 +3,26 @@
 package core
 
 import (
+	"net/url"
 	"runtime"
 
 	"github.com/apcera/logray"
 	"github.com/opencontainers/runc/libcontainer"
 )
 
+const (
+	formatString = `{"time":%epoch%,"nsec":%nanosecond%,"level":"%class%","pid":"%pid%","message":%json:message%}`
+)
+
 func Run() error {
-	logray.AddDefaultOutput("stdout://", logray.ALL)
+	u := url.URL{
+		Scheme: "stdout",
+		RawQuery: url.Values(map[string][]string{
+			"format": []string{formatString},
+		}).Encode(),
+	}
+
+	logray.AddDefaultOutput(u.String(), logray.ALL)
 	cs := &containerSetup{
 		log:           logray.New(),
 		stagerConfig:  defaultStagerConfig,

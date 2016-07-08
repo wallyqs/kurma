@@ -14,6 +14,7 @@ package logray
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -464,6 +465,8 @@ func (fp *formatParser) processCode(index int) error {
 		fp.addFormatFunc(ioOutputFormatSourceFile, 0)
 	case code == "sourceline":
 		fp.addFormatFunc(ioOutputFormatSourceLine, 0)
+	case code == "json:message":
+		fp.addFormatFunc(ioOutputFormatJsonMessage, 0)
 
 		// Field access.
 	case strings.HasPrefix(code, "field:"):
@@ -650,6 +653,17 @@ func ioOutputFormatField(field string) func(*LineData, *bytes.Buffer) error {
 		_, err := b.WriteString(fmt.Sprintf("%v", v))
 		return err
 	}
+}
+
+// Formatting function used to implement the %json:message% code.
+func ioOutputFormatJsonMessage(ld *LineData, b *bytes.Buffer) error {
+	msg, err := json.Marshal(ld.Message)
+	if err != nil {
+		return err
+	}
+
+	_, err = b.WriteString(string(msg))
+	return err
 }
 
 // Formatting function used to implement the %color:class% code.

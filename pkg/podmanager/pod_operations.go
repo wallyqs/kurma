@@ -293,6 +293,15 @@ func (pod *Pod) launchStager() error {
 				stagerOutput.Close()
 			}()
 
+			type stagerLog struct {
+				Time        int64  `json:"time"`
+				Nanoseconds int64  `json:"nsec"`
+				Message     string `json:"message"`
+				Level       string `json:"level"`
+				Pid         string `json:"pid"`
+			}
+
+			decoder := json.NewDecoder(bufreader)
 			for {
 				select {
 				case <-stagerShuttingDownCh:
@@ -305,13 +314,15 @@ func (pod *Pod) launchStager() error {
 
 					return
 				default:
+					var line stagerLog
+
 					// Abort in case of any error during read.
-					line, err := bufr.ReadString('\n')
+					err := decoder.Decode(&line)
 					if err != nil {
-						logger.Errorf("Stager Output: Stop stager debug logs output due to errors: %s", err)
+						logger.Errorf("Stager Output: Stop stager debug logs output due to errors: %s ", err)
 						return
 					}
-					logger.Debugf("Stager Output: %s", line)
+					logger.Debugf("[%s] %s", line.Pid, line.Message)
 				}
 			}
 		}(bufreader, pod.shuttingDownCh, pod.log.Clone())
